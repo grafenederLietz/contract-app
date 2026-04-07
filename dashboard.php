@@ -72,6 +72,15 @@ foreach ($contracts as $row) {
 
 $totalContracts = count($contracts);
 
+$urgentContracts = [];
+
+foreach ($contracts as $row) {
+    if (in_array((string)$row['traffic_light']['label'], ['Rot', 'Überfällig'], true)) {
+        $urgentContracts[] = $row;
+    }
+}
+
+$urgentContracts = array_slice($urgentContracts, 0, 25);
 $urgentContracts = array_values(array_filter(
     $contracts,
     static function (array $row): bool {
