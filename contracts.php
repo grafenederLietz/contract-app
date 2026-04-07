@@ -45,7 +45,7 @@ if ($trafficLightFilter !== '' && in_array($trafficLightFilter, allowed_traffic_
     $contracts = array_values(array_filter(
         $contracts,
         static function (array $row) use ($trafficLightFilter): bool {
-            return $row['traffic_light']['label'] === $trafficLightFilter;
+            return (string)$row['traffic_light']['label'] === $trafficLightFilter;
         }
     ));
 }
@@ -104,4 +104,67 @@ if ($trafficLightFilter !== '' && in_array($trafficLightFilter, allowed_traffic_
         <option value="0">-- alle --</option>
         <?php foreach ($filterLocations as $location): ?>
             <option value="<?php echo (int)$location['id']; ?>" <?php echo $locationFilter === (int)$location['id'] ? 'selected' : ''; ?>>
-                <?php echo htmlspecialchars((string)$location['name'], ENT_QUOTES
+                <?php echo htmlspecialchars((string)$location['name'], ENT_QUOTES, 'UTF-8'); ?>
+            </option>
+        <?php endforeach; ?>
+    </select><br><br>
+
+    <label for="department_id">Abteilung</label><br>
+    <select id="department_id" name="department_id">
+        <option value="0">-- alle --</option>
+        <?php foreach ($filterDepartments as $department): ?>
+            <option value="<?php echo (int)$department['id']; ?>" <?php echo $departmentFilter === (int)$department['id'] ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars((string)$department['name'], ENT_QUOTES, 'UTF-8'); ?>
+            </option>
+        <?php endforeach; ?>
+    </select><br><br>
+
+    <button type="submit">Filter anwenden</button>
+    <a href="/contracts.php">Filter zurücksetzen</a>
+</form>
+
+<h2>Ergebnis (<?php echo count($contracts); ?>)</h2>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Lieferant</th>
+        <th>Betreff</th>
+        <th>Vertragsende</th>
+        <th>Kündigungsstichtag</th>
+        <th>Ampel</th>
+        <th>Status</th>
+        <th>Verantwortlich</th>
+        <th>Aktion</th>
+    </tr>
+    </thead>
+    <tbody>
+    <?php if ($contracts === []): ?>
+        <tr>
+            <td colspan="9">Keine Verträge gefunden.</td>
+        </tr>
+    <?php else: ?>
+        <?php foreach ($contracts as $row): ?>
+            <tr>
+                <td><?php echo (int)$row['id']; ?></td>
+                <td><?php echo htmlspecialchars((string)$row['supplier'], ENT_QUOTES, 'UTF-8'); ?></td>
+                <td><?php echo htmlspecialchars((string)$row['contract_subject'], ENT_QUOTES, 'UTF-8'); ?></td>
+                <td><?php echo htmlspecialchars((string)$row['contract_end'], ENT_QUOTES, 'UTF-8'); ?></td>
+                <td><?php echo htmlspecialchars((string)$row['latest_termination_date'], ENT_QUOTES, 'UTF-8'); ?></td>
+                <td style="color: <?php echo htmlspecialchars((string)$row['traffic_light']['color'], ENT_QUOTES, 'UTF-8'); ?>; font-weight: bold;">
+                    <?php echo htmlspecialchars((string)$row['traffic_light']['label'], ENT_QUOTES, 'UTF-8'); ?>
+                </td>
+                <td><?php echo htmlspecialchars((string)$row['status'], ENT_QUOTES, 'UTF-8'); ?></td>
+                <td><?php echo htmlspecialchars((string)($row['responsible_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+                <td>
+                    <a href="/contract_edit.php?id=<?php echo (int)$row['id']; ?>">Öffnen</a>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    </tbody>
+</table>
+
+</body>
+</html>
