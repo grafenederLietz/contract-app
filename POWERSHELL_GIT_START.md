@@ -33,3 +33,26 @@ git pull origin main
 ## Wichtig
 - In PowerShell immer `C:\...` Pfade verwenden.
 - `/c/...` nur in Git Bash verwenden.
+
+## Dein konkreter Fall ("already exists" + "not a git repository")
+Wenn `contract-app` schon existiert, **nicht erneut clonen**, sondern hineingehen:
+
+```powershell
+cd C:\WebApps\contract-app
+git status
+git pull origin main
+```
+
+Wenn der Ordner alt/kaputt ist und du wirklich neu clonen willst:
+
+```powershell
+cd C:\WebApps
+Rename-Item contract-app contract-app_backup_$(Get-Date -Format yyyyMMdd_HHmm)
+git clone https://github.com/grafenederLietz/contract-app
+cd C:\WebApps\contract-app
+git pull origin main
+```
+
+Kurzregel:
+- `git clone` nur **einmal** pro Zielordner
+- Danach immer `cd ...\contract-app` und dann `git pull`
