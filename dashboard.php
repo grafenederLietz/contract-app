@@ -13,6 +13,25 @@ $user = current_user();
 $userId = current_user_id();
 $userRole = current_user_role();
 
+$supplierFilter = trim((string)($_GET['supplier'] ?? ''));
+$statusFilter = trim((string)($_GET['status'] ?? ''));
+$trafficLightFilter = trim((string)($_GET['traffic_light'] ?? ''));
+$locationFilter = isset($_GET['location_id']) ? (int)$_GET['location_id'] : 0;
+$departmentFilter = isset($_GET['department_id']) ? (int)$_GET['department_id'] : 0;
+
+$filterLocations = get_allowed_locations($db, $userId, $userRole);
+$filterDepartments = get_allowed_departments($db, $userId, $userRole);
+$allowedLocationIds = get_allowed_ids($filterLocations);
+$allowedDepartmentIds = get_allowed_ids($filterDepartments);
+
+if ($locationFilter > 0 && !in_array($locationFilter, $allowedLocationIds, true)) {
+    die('Zugriff verweigert.');
+}
+
+if ($departmentFilter > 0 && !in_array($departmentFilter, $allowedDepartmentIds, true)) {
+    die('Zugriff verweigert.');
+}
+
 $contracts = load_contract_rows(
     $db,
     $userId,
@@ -22,6 +41,21 @@ $contracts = load_contract_rows(
     0,
     0
 );
+
+    $supplierFilter,
+    $statusFilter,
+    $locationFilter,
+    $departmentFilter
+);
+
+if ($trafficLightFilter !== '' && in_array($trafficLightFilter, allowed_traffic_light_labels(), true)) {
+    $contracts = array_values(array_filter(
+        $contracts,
+        static function (array $row) use ($trafficLightFilter): bool {
+            return $row['traffic_light']['label'] === $trafficLightFilter;
+        }
+    ));
+}
 
 $trafficLightCounts = [
     'Grün' => 0,
@@ -33,6 +67,7 @@ $trafficLightCounts = [
 
 foreach ($contracts as $row) {
     $trafficLightCounts[(string)$row['traffic_light']['label']]++;
+    $trafficLightCounts[$row['traffic_light']['label']]++;
 }
 
 $totalContracts = count($contracts);
@@ -46,6 +81,19 @@ foreach ($contracts as $row) {
 }
 
 $urgentContracts = array_slice($urgentContracts, 0, 25);
+$urgentContracts = array_values(array_filter(
+    $contracts,
+    static function (array $row): bool {
+        return in_array((string)$row['traffic_light']['label'], ['Rot', 'Überfällig'], true);
+    }
+));
+
+$urgentContracts = array_slice($urgentContracts, 0, 25);
+        return in_array($row['traffic_light']['label'], ['Rot', 'Überfällig'], true);
+    }
+));
+
+$urgentContracts = array_slice($urgentContracts, 0, 10);
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -53,6 +101,7 @@ $urgentContracts = array_slice($urgentContracts, 0, 25);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/assets/app.css">
     <title>Dashboard</title>
 </head>
 <body>
@@ -91,6 +140,84 @@ $urgentContracts = array_slice($urgentContracts, 0, 25);
 
     <a href="/logout.php">Logout</a>
 </nav>
+<hr>
+
+<h2>Navigation</h2>
+
+<ul>
+    <li><a href="/contracts.php">Verträge anzeigen</a></li>
+
+    <?php if (can_manage_contracts()): ?>
+        <li><a href="/contract_create.php">Neuen Vertrag anlegen</a></li>
+    <?php endif; ?>
+
+    <?php if ($userRole === 'admin'): ?>
+        <li><a href="/users.php">Benutzerverwaltung</a></li>
+        <li><a href="/locations.php">Standortverwaltung</a></li>
+        <li><a href="/departments.php">Abteilungsverwaltung</a></li>
+    <?php endif; ?>
+
+    <li><a href="/logout.php">Logout</a></li>
+</ul>
+
+<hr>
+
+<h2>Filter</h2>
+
+<form method="get" action="">
+    <label for="supplier">Lieferant</label><br>
+    <input
+        type="text"
+        id="supplier"
+        name="supplier"
+        value="<?php echo htmlspecialchars($supplierFilter, ENT_QUOTES, 'UTF-8'); ?>"
+    ><br><br>
+
+    <label for="status">Status</label><br>
+    <select id="status" name="status">
+        <option value="">-- alle --</option>
+        <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Aktiv</option>
+        <option value="terminated" <?php echo $statusFilter === 'terminated' ? 'selected' : ''; ?>>Gekündigt</option>
+        <option value="ended" <?php echo $statusFilter === 'ended' ? 'selected' : ''; ?>>Beendet</option>
+        <option value="adjustment_required" <?php echo $statusFilter === 'adjustment_required' ? 'selected' : ''; ?>>Anpassung erforderlich</option>
+        <option value="archived" <?php echo $statusFilter === 'archived' ? 'selected' : ''; ?>>Archiviert</option>
+    </select><br><br>
+
+    <label for="traffic_light">Ampel</label><br>
+    <select id="traffic_light" name="traffic_light">
+        <option value="">-- alle --</option>
+        <option value="Grün" <?php echo $trafficLightFilter === 'Grün' ? 'selected' : ''; ?>>Grün</option>
+        <option value="Gelb" <?php echo $trafficLightFilter === 'Gelb' ? 'selected' : ''; ?>>Gelb</option>
+        <option value="Rot" <?php echo $trafficLightFilter === 'Rot' ? 'selected' : ''; ?>>Rot</option>
+        <option value="Überfällig" <?php echo $trafficLightFilter === 'Überfällig' ? 'selected' : ''; ?>>Überfällig</option>
+        <option value="Grau" <?php echo $trafficLightFilter === 'Grau' ? 'selected' : ''; ?>>Grau</option>
+    </select><br><br>
+
+    <label for="location_id">Standort</label><br>
+    <select id="location_id" name="location_id">
+        <option value="0">-- alle --</option>
+        <?php foreach ($filterLocations as $location): ?>
+            <option value="<?php echo (int)$location['id']; ?>" <?php echo $locationFilter === (int)$location['id'] ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars((string)$location['name'], ENT_QUOTES, 'UTF-8'); ?>
+            </option>
+        <?php endforeach; ?>
+    </select><br><br>
+
+    <label for="department_id">Abteilung</label><br>
+    <select id="department_id" name="department_id">
+        <option value="0">-- alle --</option>
+        <?php foreach ($filterDepartments as $department): ?>
+            <option value="<?php echo (int)$department['id']; ?>" <?php echo $departmentFilter === (int)$department['id'] ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars((string)$department['name'], ENT_QUOTES, 'UTF-8'); ?>
+            </option>
+        <?php endforeach; ?>
+    </select><br><br>
+
+    <button type="submit">Filtern</button>
+    <a href="/dashboard.php">Filter zurücksetzen</a>
+</form>
+
+<hr>
 
 <h2>Ampelübersicht</h2>
 
@@ -116,6 +243,11 @@ $urgentContracts = array_slice($urgentContracts, 0, 25);
 <h2>Kritische Verträge</h2>
 
 <?php if ($urgentContracts === []): ?>
+<hr>
+
+<h2>Kritische Verträge</h2>
+
+<?php if (empty($urgentContracts)): ?>
     <p>Keine roten oder überfälligen Verträge vorhanden.</p>
 <?php else: ?>
     <table border="1" cellpadding="6" cellspacing="0">
@@ -150,4 +282,5 @@ $urgentContracts = array_slice($urgentContracts, 0, 25);
 <?php endif; ?>
 
 </body>
+</html>
 </html>
