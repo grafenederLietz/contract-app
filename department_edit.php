@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
+require_once __DIR__ . '/../src/csrf.php';
 
 require_login();
 
@@ -31,7 +32,8 @@ $stmt = $db->prepare("
 ");
 
 if (!$stmt) {
-    die('Prepare-Fehler: ' . $db->error);
+    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
 }
 
 $stmt->bind_param('i', $id);
@@ -45,6 +47,7 @@ if (!$department) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     $name = trim((string)($_POST['name'] ?? ''));
 
     if ($name === '') {
@@ -58,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
 
         if (!$checkStmt) {
-            die('Prepare-Fehler: ' . $db->error);
+            app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
         }
 
         $checkStmt->bind_param('si', $name, $id);
@@ -77,7 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ");
 
             if (!$updateStmt) {
-                die('Prepare-Fehler: ' . $db->error);
+                app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
             }
 
             $updateStmt->bind_param('si', $name, $id);
@@ -86,7 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'Abteilung wurde gespeichert.';
                 $department['name'] = $name;
             } else {
-                $error = 'Fehler beim Speichern: ' . $updateStmt->error;
+                app_log('db-execute', $updateStmt->error);
+                $error = 'Daten konnten nicht gespeichert werden.';
             }
 
             $updateStmt->close();
@@ -98,6 +104,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/app.css">
     <title>Abteilung bearbeiten</title>
 </head>
 <body>
@@ -119,6 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endif; ?>
 
 <form method="post">
+    <?php echo csrf_input(); ?>
     <label for="name">Abteilungsname</label><br>
     <input
         type="text"

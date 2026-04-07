@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
+require_once __DIR__ . '/../src/csrf.php';
 require_once __DIR__ . '/../src/contract_access.php';
 
 require_login();
@@ -27,6 +28,7 @@ $allowedLocationIds = get_allowed_ids($locations);
 $allowedDepartmentIds = get_allowed_ids($departments);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     $supplier = trim((string)($_POST['supplier'] ?? ''));
     $contract_subject = trim((string)($_POST['contract_subject'] ?? ''));
     $contract_start = (string)($_POST['contract_start'] ?? '');
@@ -73,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
 
         if (!$stmt) {
-            die('Prepare-Fehler: ' . $db->error);
+            app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
         }
 
         $stmt->bind_param(
@@ -100,7 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$stmtLoc) {
-                    die('Prepare-Fehler Standorte: ' . $db->error);
+                    app_log('db-prepare-standorte', $db->error);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 foreach ($validatedLocationIds as $locId) {
@@ -118,7 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$stmtDept) {
-                    die('Prepare-Fehler Abteilungen: ' . $db->error);
+                    app_log('db-prepare-abteilungen', $db->error);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 foreach ($validatedDepartmentIds as $deptId) {
@@ -131,7 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $success = 'Vertrag gespeichert.';
         } else {
-            $error = 'Fehler beim Speichern: ' . $stmt->error;
+            app_log('db-execute', $stmt->error);
+                $error = 'Daten konnten nicht gespeichert werden.';
             $stmt->close();
         }
     }
@@ -141,6 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/app.css">
     <title>Vertrag anlegen</title>
 </head>
 <body>
@@ -162,6 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endif; ?>
 
 <form method="post">
+    <?php echo csrf_input(); ?>
 
     <label for="supplier">Lieferant</label><br>
     <input type="text" id="supplier" name="supplier" required><br><br>

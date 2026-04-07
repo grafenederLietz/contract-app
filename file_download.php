@@ -25,7 +25,8 @@ $stmt = $db->prepare("
 ");
 
 if (!$stmt) {
-    die('Prepare-Fehler: ' . $db->error);
+    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
 }
 
 $stmt->bind_param('i', $file_id);
@@ -44,7 +45,8 @@ if (!file_exists($filePath)) {
     die('Datei existiert nicht auf dem Server.');
 }
 
-header('Content-Type: application/pdf');
+$mime = mime_content_type($filePath) ?: 'application/octet-stream';
+header('Content-Type: ' . $mime);
 header('Content-Disposition: inline; filename="' . basename((string)$file['file_name']) . '"');
 header('Content-Length: ' . filesize($filePath));
 

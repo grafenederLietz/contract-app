@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
+require_once __DIR__ . '/../src/csrf.php';
 
 require_login();
 
@@ -31,7 +32,8 @@ $stmt = $db->prepare("
 ");
 
 if (!$stmt) {
-    die('Prepare-Fehler: ' . $db->error);
+    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
 }
 
 $stmt->bind_param('i', $id);
@@ -45,6 +47,7 @@ if (!$editUser) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     $username = trim((string)($_POST['username'] ?? ''));
     $display_name = trim((string)($_POST['display_name'] ?? ''));
     $email = trim((string)($_POST['email'] ?? ''));
@@ -63,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $checkStmt = $db->prepare("SELECT id FROM users WHERE username = ? AND id <> ? LIMIT 1");
         if (!$checkStmt) {
-            die('Prepare-Fehler: ' . $db->error);
+            app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
         }
 
         $checkStmt->bind_param('si', $username, $id);
@@ -85,7 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$updateStmt) {
-                    die('Prepare-Fehler: ' . $db->error);
+                    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $updateStmt->bind_param(
@@ -106,7 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$updateStmt) {
-                    die('Prepare-Fehler: ' . $db->error);
+                    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $updateStmt->bind_param(
@@ -125,7 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $deleteDepartmentsStmt = $db->prepare("DELETE FROM user_departments WHERE user_id = ?");
                 if (!$deleteDepartmentsStmt) {
-                    die('Prepare-Fehler: ' . $db->error);
+                    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $deleteDepartmentsStmt->bind_param('i', $id);
@@ -139,7 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
 
                     if (!$insertDepartmentStmt) {
-                        die('Prepare-Fehler: ' . $db->error);
+                        app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
                     }
 
                     foreach ($department_ids as $departmentId) {
@@ -156,7 +164,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $deleteLocationsStmt = $db->prepare("DELETE FROM user_locations WHERE user_id = ?");
                 if (!$deleteLocationsStmt) {
-                    die('Prepare-Fehler: ' . $db->error);
+                    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $deleteLocationsStmt->bind_param('i', $id);
@@ -170,7 +179,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
 
                     if (!$insertLocationStmt) {
-                        die('Prepare-Fehler: ' . $db->error);
+                        app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
                     }
 
                     foreach ($location_ids as $locationId) {
@@ -187,7 +197,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $success = 'Benutzer wurde gespeichert.';
             } else {
-                $error = 'Fehler beim Speichern: ' . $updateStmt->error;
+                app_log('db-execute', $updateStmt->error);
+                $error = 'Daten konnten nicht gespeichert werden.';
                 $updateStmt->close();
             }
 
@@ -215,7 +226,8 @@ $selectedDepartmentsStmt = $db->prepare("
 ");
 
 if (!$selectedDepartmentsStmt) {
-    die('Prepare-Fehler: ' . $db->error);
+    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
 }
 
 $selectedDepartmentsStmt->bind_param('i', $id);
@@ -237,7 +249,8 @@ $selectedLocationsStmt = $db->prepare("
 ");
 
 if (!$selectedLocationsStmt) {
-    die('Prepare-Fehler: ' . $db->error);
+    app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
 }
 
 $selectedLocationsStmt->bind_param('i', $id);
@@ -274,6 +287,8 @@ if (!$locations) {
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/app.css">
     <title>Benutzer bearbeiten</title>
 </head>
 <body>
@@ -295,6 +310,7 @@ if (!$locations) {
 <?php endif; ?>
 
 <form method="post">
+    <?php echo csrf_input(); ?>
 
     <label for="username">Benutzername</label><br>
     <input
