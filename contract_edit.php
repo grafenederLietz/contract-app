@@ -122,6 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validatedDepartmentIds === []
     ) {
         $error = 'Alle Felder sind Pflichtfelder. Bitte alles ausfüllen und mindestens einen Standort/Abteilung wählen.';
+    if ($supplier === '' || $contract_start === '' || $duration_months <= 0) {
+        $error = 'Pflichtfelder fehlen.';
     } elseif (!in_array($status, allowed_contract_statuses(), true)) {
         $error = 'Ungültiger Status.';
     } else {
@@ -362,6 +364,7 @@ $filesResult = $filesStmt->get_result();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/assets/app.css">
     <title>Vertrag bearbeiten</title>
 </head>
 <body>
@@ -396,6 +399,7 @@ $filesResult = $filesStmt->get_result();
     ><br><br>
 
     <label for="contract_subject">Vertragsgegenstand *</label><br>
+    <label for="contract_subject">Vertragsgegenstand</label><br>
     <textarea
         id="contract_subject"
         name="contract_subject"
@@ -427,6 +431,7 @@ $filesResult = $filesStmt->get_result();
     ><br><br>
 
     <label for="termination_period_months">Kündigungsfrist (Monate) *</label><br>
+    <label for="termination_period_months">Kündigungsfrist (Monate)</label><br>
     <input
         type="number"
         id="termination_period_months"
@@ -438,6 +443,10 @@ $filesResult = $filesStmt->get_result();
     ><br><br>
 
     <label for="termination_text">Kündigungsbedingungen *</label><br>
+        <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
+    ><br><br>
+
+    <label for="termination_text">Kündigungsbedingungen</label><br>
     <textarea
         id="termination_text"
         name="termination_text"
@@ -449,6 +458,11 @@ $filesResult = $filesStmt->get_result();
 
     <label for="status">Status *</label><br>
     <select id="status" name="status" required <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
+        <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
+    ><?php echo htmlspecialchars((string)$contract['termination_text'], ENT_QUOTES, 'UTF-8'); ?></textarea><br><br>
+
+    <label for="status">Status</label><br>
+    <select id="status" name="status" <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
         <option value="active" <?php echo $contract['status'] === 'active' ? 'selected' : ''; ?>>Aktiv</option>
         <option value="terminated" <?php echo $contract['status'] === 'terminated' ? 'selected' : ''; ?>>Gekündigt</option>
         <option value="ended" <?php echo $contract['status'] === 'ended' ? 'selected' : ''; ?>>Beendet</option>
@@ -458,6 +472,8 @@ $filesResult = $filesStmt->get_result();
 
     <label for="responsible_user_id">Verantwortlicher *</label><br>
     <select id="responsible_user_id" name="responsible_user_id" required <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
+    <label for="responsible_user_id">Verantwortlicher</label><br>
+    <select id="responsible_user_id" name="responsible_user_id" <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
         <option value="0">-- auswählen --</option>
         <?php foreach ($users as $userItem): ?>
             <option
@@ -500,6 +516,29 @@ $filesResult = $filesStmt->get_result();
             </label>
         <?php endforeach; ?>
     </div><br>
+    <label for="location_ids">Standorte</label><br>
+    <select id="location_ids" name="location_ids[]" multiple size="5" <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
+        <?php foreach ($locations as $location): ?>
+            <option
+                value="<?php echo (int)$location['id']; ?>"
+                <?php echo in_array((int)$location['id'], $selectedLocations, true) ? 'selected' : ''; ?>
+            >
+                <?php echo htmlspecialchars((string)$location['name'], ENT_QUOTES, 'UTF-8'); ?>
+            </option>
+        <?php endforeach; ?>
+    </select><br><br>
+
+    <label for="department_ids">Abteilungen</label><br>
+    <select id="department_ids" name="department_ids[]" multiple size="5" <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
+        <?php foreach ($departments as $department): ?>
+            <option
+                value="<?php echo (int)$department['id']; ?>"
+                <?php echo in_array((int)$department['id'], $selectedDepartments, true) ? 'selected' : ''; ?>
+            >
+                <?php echo htmlspecialchars((string)$department['name'], ENT_QUOTES, 'UTF-8'); ?>
+            </option>
+        <?php endforeach; ?>
+    </select><br><br>
 
     <p>
         Berechnetes Vertragsende:
@@ -540,4 +579,5 @@ $filesResult = $filesStmt->get_result();
 <?php endif; ?>
 
 </body>
+</html>
 </html>
