@@ -36,6 +36,12 @@ $contracts = load_contract_rows(
     $db,
     $userId,
     $userRole,
+    '',
+    '',
+    0,
+    0
+);
+
     $supplierFilter,
     $statusFilter,
     $locationFilter,
@@ -60,6 +66,7 @@ $trafficLightCounts = [
 ];
 
 foreach ($contracts as $row) {
+    $trafficLightCounts[(string)$row['traffic_light']['label']]++;
     $trafficLightCounts[$row['traffic_light']['label']]++;
 }
 
@@ -68,6 +75,11 @@ $totalContracts = count($contracts);
 $urgentContracts = array_values(array_filter(
     $contracts,
     static function (array $row): bool {
+        return in_array((string)$row['traffic_light']['label'], ['Rot', 'Überfällig'], true);
+    }
+));
+
+$urgentContracts = array_slice($urgentContracts, 0, 25);
         return in_array($row['traffic_light']['label'], ['Rot', 'Überfällig'], true);
     }
 ));
@@ -93,6 +105,32 @@ $urgentContracts = array_slice($urgentContracts, 0, 10);
     (<?php echo htmlspecialchars((string)$user['role'], ENT_QUOTES, 'UTF-8'); ?>)
 </p>
 
+<nav class="top-nav">
+    <a href="/dashboard.php">Dashboard</a>
+
+    <details>
+        <summary>Vertragsverwaltung</summary>
+        <a href="/contracts.php">Verträge anzeigen</a>
+        <?php if (can_manage_contracts()): ?>
+            <a href="/contract_create.php">Neuer Vertrag</a>
+        <?php endif; ?>
+    </details>
+
+    <?php if ($userRole === 'admin'): ?>
+        <details>
+            <summary>Userverwaltung</summary>
+            <a href="/users.php">Benutzerverwaltung</a>
+        </details>
+
+        <details>
+            <summary>Stammdatenverwaltung</summary>
+            <a href="/locations.php">Standorte</a>
+            <a href="/departments.php">Abteilungen</a>
+        </details>
+    <?php endif; ?>
+
+    <a href="/logout.php">Logout</a>
+</nav>
 <hr>
 
 <h2>Navigation</h2>
@@ -193,6 +231,9 @@ $urgentContracts = array_slice($urgentContracts, 0, 10);
     </tr>
 </table>
 
+<h2>Kritische Verträge</h2>
+
+<?php if ($urgentContracts === []): ?>
 <hr>
 
 <h2>Kritische Verträge</h2>
@@ -232,4 +273,5 @@ $urgentContracts = array_slice($urgentContracts, 0, 10);
 <?php endif; ?>
 
 </body>
+</html>
 </html>

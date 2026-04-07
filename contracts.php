@@ -73,6 +73,66 @@ if ($trafficLightFilter !== '' && in_array($trafficLightFilter, allowed_traffic_
 
 <h2>Filter</h2>
 
+<form method="get" action="" class="filter-inline">
+    <div>
+        <label for="supplier">Lieferant</label>
+        <input type="text" id="supplier" name="supplier" value="<?php echo htmlspecialchars($supplierFilter, ENT_QUOTES, 'UTF-8'); ?>">
+    </div>
+
+    <div>
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">-- alle --</option>
+            <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Aktiv</option>
+            <option value="terminated" <?php echo $statusFilter === 'terminated' ? 'selected' : ''; ?>>Gekündigt</option>
+            <option value="ended" <?php echo $statusFilter === 'ended' ? 'selected' : ''; ?>>Beendet</option>
+            <option value="adjustment_required" <?php echo $statusFilter === 'adjustment_required' ? 'selected' : ''; ?>>Anpassung erforderlich</option>
+            <option value="archived" <?php echo $statusFilter === 'archived' ? 'selected' : ''; ?>>Archiviert</option>
+        </select>
+    </div>
+
+    <button type="submit">Filter anwenden</button>
+    <a href="/contracts.php">Zurücksetzen</a>
+
+    <details class="more-filters">
+        <summary>Weitere Filter</summary>
+
+        <div>
+            <label for="traffic_light">Ampel</label>
+            <select id="traffic_light" name="traffic_light">
+                <option value="">-- alle --</option>
+                <option value="Grün" <?php echo $trafficLightFilter === 'Grün' ? 'selected' : ''; ?>>Grün</option>
+                <option value="Gelb" <?php echo $trafficLightFilter === 'Gelb' ? 'selected' : ''; ?>>Gelb</option>
+                <option value="Rot" <?php echo $trafficLightFilter === 'Rot' ? 'selected' : ''; ?>>Rot</option>
+                <option value="Überfällig" <?php echo $trafficLightFilter === 'Überfällig' ? 'selected' : ''; ?>>Überfällig</option>
+                <option value="Grau" <?php echo $trafficLightFilter === 'Grau' ? 'selected' : ''; ?>>Grau</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="location_id">Standort</label>
+            <select id="location_id" name="location_id">
+                <option value="0">-- alle --</option>
+                <?php foreach ($filterLocations as $location): ?>
+                    <option value="<?php echo (int)$location['id']; ?>" <?php echo $locationFilter === (int)$location['id'] ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars((string)$location['name'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div>
+            <label for="department_id">Abteilung</label>
+            <select id="department_id" name="department_id">
+                <option value="0">-- alle --</option>
+                <?php foreach ($filterDepartments as $department): ?>
+                    <option value="<?php echo (int)$department['id']; ?>" <?php echo $departmentFilter === (int)$department['id'] ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars((string)$department['name'], ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </details>
 <form method="get" action="">
     <label for="supplier">Lieferant</label><br>
     <input
@@ -160,6 +220,7 @@ if ($trafficLightFilter !== '' && in_array($trafficLightFilter, allowed_traffic_
                 </td>
                 <td><?php echo htmlspecialchars((string)$row['status'], ENT_QUOTES, 'UTF-8'); ?></td>
                 <td><?php echo htmlspecialchars((string)($row['responsible_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
+                <td><a href="/contract_edit.php?id=<?php echo (int)$row['id']; ?>">Öffnen</a></td>
                 <td>
                     <a href="/contract_edit.php?id=<?php echo (int)$row['id']; ?>">Öffnen</a>
                 </td>

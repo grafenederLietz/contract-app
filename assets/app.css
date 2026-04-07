@@ -131,3 +131,64 @@ p[style*="color:green"] {
   p, form, table { margin: 10px; padding: 12px; }
   h1, h2 { margin-left: 10px; margin-right: 10px; }
 }
+
+.top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.top-nav > a,
+.top-nav details {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.top-nav details {
+  position: relative;
+}
+
+.top-nav details[open] {
+  box-shadow: var(--shadow);
+}
+
+.top-nav details a {
+  display: block;
+  margin-top: 8px;
+}
+
+.filter-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.filter-inline .more-filters {
+  width: 100%;
+  margin-top: 4px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.filter-inline .more-filters > div {
+  margin-top: 10px;
+}
+
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.check-grid label {
+  font-weight: 500;
+}
