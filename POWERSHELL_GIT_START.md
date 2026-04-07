@@ -56,3 +56,27 @@ git pull origin main
 Kurzregel:
 - `git clone` nur **einmal** pro Zielordner
 - Danach immer `cd ...\contract-app` und dann `git pull`
+
+## Wenn `main` schon aktuell ist und Branch-Merge nur Konflikte macht
+Du brauchst in diesem Fall **keinen** Merge von `main` in den `codex/...` Branch.
+
+So kommst du sauber zurück auf einen einzigen aktuellen Stand:
+
+```powershell
+# Falls gerade ein konfliktbehafteter Merge offen ist:
+git merge --abort
+
+# Auf main zurück:
+git checkout main
+git pull origin main
+
+# Optional: problematischen lokalen Branch löschen:
+git branch -D codex/review-contract-app-repository-s0oxp5
+
+# Prüfen:
+git status
+```
+
+Erwartung: `On branch main` + `working tree clean`.
+
+Dann arbeitest du nur noch auf `main` oder auf einem **neuen** Branch von `main`.
