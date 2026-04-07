@@ -288,6 +288,7 @@ if (!$locations) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/app.css">
     <link rel="stylesheet" href="/assets/app.css">
     <title>Benutzer bearbeiten</title>
 </head>
