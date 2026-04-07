@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
+require_once __DIR__ . '/../src/csrf.php';
 
 require_login();
 
@@ -18,6 +19,7 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     $name = trim((string)($_POST['name'] ?? ''));
 
     if ($name === '') {
@@ -26,7 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $checkStmt = $db->prepare("SELECT id FROM locations WHERE name = ? LIMIT 1");
 
         if (!$checkStmt) {
-            die('Prepare-Fehler: ' . $db->error);
+            app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
         }
 
         $checkStmt->bind_param('s', $name);
@@ -41,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $db->prepare("INSERT INTO locations (name) VALUES (?)");
 
             if (!$stmt) {
-                die('Prepare-Fehler: ' . $db->error);
+                app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
             }
 
             $stmt->bind_param('s', $name);
@@ -49,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $success = 'Standort wurde angelegt.';
             } else {
-                $error = 'Fehler beim Speichern: ' . $stmt->error;
+                app_log('db-execute', $stmt->error);
+                $error = 'Daten konnten nicht gespeichert werden.';
             }
 
             $stmt->close();
@@ -82,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endif; ?>
 
 <form method="post">
+    <?php echo csrf_input(); ?>
     <label for="name">Standortname</label><br>
     <input type="text" id="name" name="name" required><br><br>
 
