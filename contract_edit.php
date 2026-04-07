@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
+require_once __DIR__ . '/../src/csrf.php';
 require_once __DIR__ . '/../src/contract_access.php';
 
 require_login();
@@ -43,7 +44,8 @@ $stmt = $db->prepare("
 ");
 
 if (!$stmt) {
-    die('Prepare-Fehler Vertrag laden: ' . $db->error);
+    app_log('db-prepare-vertrag-laden', $db->error);
+    app_abort('Datenbank-Fehler.', 500);
 }
 
 $stmt->bind_param('i', $id);
@@ -81,6 +83,7 @@ if ($userRole !== 'admin') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     if (!can_manage_contracts()) {
         die('Zugriff verweigert.');
     }
@@ -130,7 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
 
         if (!$stmt) {
-            die('Prepare-Fehler: ' . $db->error);
+            app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
         }
 
         $stmt->bind_param(
@@ -148,7 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
 
         if (!$stmt->execute()) {
-            $error = 'Fehler beim Speichern: ' . $stmt->error;
+            app_log('db-execute', $stmt->error);
+                $error = 'Daten konnten nicht gespeichert werden.';
         }
 
         $stmt->close();
@@ -156,7 +161,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($error === '') {
             $stmt = $db->prepare("DELETE FROM contract_locations WHERE contract_id = ?");
             if (!$stmt) {
-                die('Prepare-Fehler Standorte löschen: ' . $db->error);
+                app_log('db-prepare-standorte-loeschen', $db->error);
+                app_abort('Datenbank-Fehler.', 500);
             }
             $stmt->bind_param('i', $id);
             $stmt->execute();
@@ -164,7 +170,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmt = $db->prepare("DELETE FROM contract_departments WHERE contract_id = ?");
             if (!$stmt) {
-                die('Prepare-Fehler Abteilungen löschen: ' . $db->error);
+                app_log('db-prepare-abteilungen-loeschen', $db->error);
+                app_abort('Datenbank-Fehler.', 500);
             }
             $stmt->bind_param('i', $id);
             $stmt->execute();
@@ -177,7 +184,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$stmt) {
-                    die('Prepare-Fehler Standorte speichern: ' . $db->error);
+                    app_log('db-prepare-standorte-speichern', $db->error);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 foreach ($validatedLocationIds as $locationId) {
@@ -195,7 +203,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$stmt) {
-                    die('Prepare-Fehler Abteilungen speichern: ' . $db->error);
+                    app_log('db-prepare-abteilungen-speichern', $db->error);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 foreach ($validatedDepartmentIds as $departmentId) {
@@ -273,7 +282,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
 
                     if (!$stmt) {
-                        die('Prepare-Fehler Datei speichern: ' . $db->error);
+                        app_log('db-prepare-datei-speichern', $db->error);
+                        app_abort('Datenbank-Fehler.', 500);
                     }
 
                     $stmt->bind_param('iss', $id, $targetFileName, $targetPath);
@@ -303,7 +313,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$stmt) {
-                    die('Prepare-Fehler Vertrag neu laden: ' . $db->error);
+                    app_log('db-prepare-vertrag-neu-laden', $db->error);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $stmt->bind_param('i', $id);
@@ -327,7 +338,8 @@ $filesStmt = $db->prepare("
 ");
 
 if (!$filesStmt) {
-    die('Prepare-Fehler Dateien laden: ' . $db->error);
+    app_log('db-prepare-dateien-laden', $db->error);
+    app_abort('Datenbank-Fehler.', 500);
 }
 
 $filesStmt->bind_param('i', $id);
@@ -359,6 +371,7 @@ $filesResult = $filesStmt->get_result();
 <?php endif; ?>
 
 <form method="post" enctype="multipart/form-data">
+    <?php echo csrf_input(); ?>
 
     <label for="supplier">Lieferant</label><br>
     <input
