@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
+require_once __DIR__ . '/../src/csrf.php';
 
 require_login();
 
@@ -18,6 +19,7 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     $username = trim((string)($_POST['username'] ?? ''));
     $display_name = trim((string)($_POST['display_name'] ?? ''));
     $email = trim((string)($_POST['email'] ?? ''));
@@ -34,7 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $checkStmt = $db->prepare("SELECT id FROM users WHERE username = ? LIMIT 1");
         if (!$checkStmt) {
-            die('Prepare-Fehler: ' . $db->error);
+            app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
         }
 
         $checkStmt->bind_param('s', $username);
@@ -55,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ");
 
             if (!$stmt) {
-                die('Prepare-Fehler: ' . $db->error);
+                app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
             }
 
             $stmt->bind_param(
@@ -71,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $success = 'Benutzer wurde angelegt.';
             } else {
-                $error = 'Fehler beim Speichern: ' . $stmt->error;
+                app_log('db-execute', $stmt->error);
+                $error = 'Daten konnten nicht gespeichert werden.';
             }
 
             $stmt->close();
@@ -83,6 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/app.css">
     <title>Benutzer anlegen</title>
 </head>
 <body>
@@ -104,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endif; ?>
 
 <form method="post">
+    <?php echo csrf_input(); ?>
 
     <label for="username">Benutzername</label><br>
     <input type="text" id="username" name="username" required><br><br>

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
+require_once __DIR__ . '/../src/csrf.php';
 require_once __DIR__ . '/../src/contract_access.php';
 
 require_login();
@@ -43,7 +44,8 @@ $stmt = $db->prepare("
 ");
 
 if (!$stmt) {
-    die('Prepare-Fehler Vertrag laden: ' . $db->error);
+    app_log('db-prepare-vertrag-laden', $db->error);
+    app_abort('Datenbank-Fehler.', 500);
 }
 
 $stmt->bind_param('i', $id);
@@ -81,6 +83,7 @@ if ($userRole !== 'admin') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     if (!can_manage_contracts()) {
         die('Zugriff verweigert.');
     }
@@ -107,8 +110,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $validatedLocationIds = validate_selected_ids($location_ids, $allowedLocationIds);
     $validatedDepartmentIds = validate_selected_ids($department_ids, $allowedDepartmentIds);
 
-    if ($supplier === '' || $contract_start === '' || $duration_months <= 0) {
-        $error = 'Pflichtfelder fehlen.';
+    if (
+        $supplier === '' ||
+        $contract_subject === '' ||
+        $contract_start === '' ||
+        $duration_months <= 0 ||
+        $termination_period_months < 0 ||
+        $termination_text === '' ||
+        $responsible_user_id <= 0 ||
+        $validatedLocationIds === [] ||
+        $validatedDepartmentIds === []
+    ) {
+        $error = 'Alle Felder sind Pflichtfelder. Bitte alles ausfüllen und mindestens einen Standort/Abteilung wählen.';
     } elseif (!in_array($status, allowed_contract_statuses(), true)) {
         $error = 'Ungültiger Status.';
     } else {
@@ -130,7 +143,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
 
         if (!$stmt) {
-            die('Prepare-Fehler: ' . $db->error);
+            app_log('db-prepare', $db->error);
+            app_abort('Datenbank-Fehler.', 500);
         }
 
         $stmt->bind_param(
@@ -148,7 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
 
         if (!$stmt->execute()) {
-            $error = 'Fehler beim Speichern: ' . $stmt->error;
+            app_log('db-execute', $stmt->error);
+                $error = 'Daten konnten nicht gespeichert werden.';
         }
 
         $stmt->close();
@@ -156,7 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($error === '') {
             $stmt = $db->prepare("DELETE FROM contract_locations WHERE contract_id = ?");
             if (!$stmt) {
-                die('Prepare-Fehler Standorte löschen: ' . $db->error);
+                app_log('db-prepare-standorte-loeschen', $db->error);
+                app_abort('Datenbank-Fehler.', 500);
             }
             $stmt->bind_param('i', $id);
             $stmt->execute();
@@ -164,7 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmt = $db->prepare("DELETE FROM contract_departments WHERE contract_id = ?");
             if (!$stmt) {
-                die('Prepare-Fehler Abteilungen löschen: ' . $db->error);
+                app_log('db-prepare-abteilungen-loeschen', $db->error);
+                app_abort('Datenbank-Fehler.', 500);
             }
             $stmt->bind_param('i', $id);
             $stmt->execute();
@@ -177,7 +194,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$stmt) {
-                    die('Prepare-Fehler Standorte speichern: ' . $db->error);
+                    app_log('db-prepare-standorte-speichern', $db->error);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 foreach ($validatedLocationIds as $locationId) {
@@ -195,7 +213,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$stmt) {
-                    die('Prepare-Fehler Abteilungen speichern: ' . $db->error);
+                    app_log('db-prepare-abteilungen-speichern', $db->error);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 foreach ($validatedDepartmentIds as $departmentId) {
@@ -273,7 +292,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ");
 
                     if (!$stmt) {
-                        die('Prepare-Fehler Datei speichern: ' . $db->error);
+                        app_log('db-prepare-datei-speichern', $db->error);
+                        app_abort('Datenbank-Fehler.', 500);
                     }
 
                     $stmt->bind_param('iss', $id, $targetFileName, $targetPath);
@@ -303,7 +323,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
 
                 if (!$stmt) {
-                    die('Prepare-Fehler Vertrag neu laden: ' . $db->error);
+                    app_log('db-prepare-vertrag-neu-laden', $db->error);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $stmt->bind_param('i', $id);
@@ -327,7 +348,8 @@ $filesStmt = $db->prepare("
 ");
 
 if (!$filesStmt) {
-    die('Prepare-Fehler Dateien laden: ' . $db->error);
+    app_log('db-prepare-dateien-laden', $db->error);
+    app_abort('Datenbank-Fehler.', 500);
 }
 
 $filesStmt->bind_param('i', $id);
@@ -338,6 +360,8 @@ $filesResult = $filesStmt->get_result();
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/app.css">
     <title>Vertrag bearbeiten</title>
 </head>
 <body>
@@ -359,6 +383,7 @@ $filesResult = $filesStmt->get_result();
 <?php endif; ?>
 
 <form method="post" enctype="multipart/form-data">
+    <?php echo csrf_input(); ?>
 
     <label for="supplier">Lieferant</label><br>
     <input
@@ -370,12 +395,13 @@ $filesResult = $filesStmt->get_result();
         <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
     ><br><br>
 
-    <label for="contract_subject">Vertragsgegenstand</label><br>
+    <label for="contract_subject">Vertragsgegenstand *</label><br>
     <textarea
         id="contract_subject"
         name="contract_subject"
         rows="4"
         cols="60"
+        required
         <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
     ><?php echo htmlspecialchars((string)$contract['contract_subject'], ENT_QUOTES, 'UTF-8'); ?></textarea><br><br>
 
@@ -400,27 +426,29 @@ $filesResult = $filesStmt->get_result();
         <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
     ><br><br>
 
-    <label for="termination_period_months">Kündigungsfrist (Monate)</label><br>
+    <label for="termination_period_months">Kündigungsfrist (Monate) *</label><br>
     <input
         type="number"
         id="termination_period_months"
         name="termination_period_months"
         min="0"
         value="<?php echo (int)$contract['termination_period_months']; ?>"
+        required
         <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
     ><br><br>
 
-    <label for="termination_text">Kündigungsbedingungen</label><br>
+    <label for="termination_text">Kündigungsbedingungen *</label><br>
     <textarea
         id="termination_text"
         name="termination_text"
         rows="4"
         cols="60"
+        required
         <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
     ><?php echo htmlspecialchars((string)$contract['termination_text'], ENT_QUOTES, 'UTF-8'); ?></textarea><br><br>
 
-    <label for="status">Status</label><br>
-    <select id="status" name="status" <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
+    <label for="status">Status *</label><br>
+    <select id="status" name="status" required <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
         <option value="active" <?php echo $contract['status'] === 'active' ? 'selected' : ''; ?>>Aktiv</option>
         <option value="terminated" <?php echo $contract['status'] === 'terminated' ? 'selected' : ''; ?>>Gekündigt</option>
         <option value="ended" <?php echo $contract['status'] === 'ended' ? 'selected' : ''; ?>>Beendet</option>
@@ -428,8 +456,8 @@ $filesResult = $filesStmt->get_result();
         <option value="archived" <?php echo $contract['status'] === 'archived' ? 'selected' : ''; ?>>Archiviert</option>
     </select><br><br>
 
-    <label for="responsible_user_id">Verantwortlicher</label><br>
-    <select id="responsible_user_id" name="responsible_user_id" <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
+    <label for="responsible_user_id">Verantwortlicher *</label><br>
+    <select id="responsible_user_id" name="responsible_user_id" required <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
         <option value="0">-- auswählen --</option>
         <?php foreach ($users as $userItem): ?>
             <option
@@ -441,29 +469,37 @@ $filesResult = $filesStmt->get_result();
         <?php endforeach; ?>
     </select><br><br>
 
-    <label for="location_ids">Standorte</label><br>
-    <select id="location_ids" name="location_ids[]" multiple size="5" <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
+    <label>Standorte * (mind. 1)</label><br>
+    <div class="check-grid">
         <?php foreach ($locations as $location): ?>
-            <option
-                value="<?php echo (int)$location['id']; ?>"
-                <?php echo in_array((int)$location['id'], $selectedLocations, true) ? 'selected' : ''; ?>
-            >
+            <label>
+                <input
+                    type="checkbox"
+                    name="location_ids[]"
+                    value="<?php echo (int)$location['id']; ?>"
+                    <?php echo in_array((int)$location['id'], $selectedLocations, true) ? 'checked' : ''; ?>
+                    <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
+                >
                 <?php echo htmlspecialchars((string)$location['name'], ENT_QUOTES, 'UTF-8'); ?>
-            </option>
+            </label>
         <?php endforeach; ?>
-    </select><br><br>
+    </div><br>
 
-    <label for="department_ids">Abteilungen</label><br>
-    <select id="department_ids" name="department_ids[]" multiple size="5" <?php echo can_manage_contracts() ? '' : 'disabled'; ?>>
+    <label>Abteilungen * (mind. 1)</label><br>
+    <div class="check-grid">
         <?php foreach ($departments as $department): ?>
-            <option
-                value="<?php echo (int)$department['id']; ?>"
-                <?php echo in_array((int)$department['id'], $selectedDepartments, true) ? 'selected' : ''; ?>
-            >
+            <label>
+                <input
+                    type="checkbox"
+                    name="department_ids[]"
+                    value="<?php echo (int)$department['id']; ?>"
+                    <?php echo in_array((int)$department['id'], $selectedDepartments, true) ? 'checked' : ''; ?>
+                    <?php echo can_manage_contracts() ? '' : 'disabled'; ?>
+                >
                 <?php echo htmlspecialchars((string)$department['name'], ENT_QUOTES, 'UTF-8'); ?>
-            </option>
+            </label>
         <?php endforeach; ?>
-    </select><br><br>
+    </div><br>
 
     <p>
         Berechnetes Vertragsende:

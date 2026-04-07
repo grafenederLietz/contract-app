@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
+require_once __DIR__ . '/../src/csrf.php';
 require_once __DIR__ . '/../src/contract_access.php';
 
 require_login();
 
 if (!can_manage_contracts()) {
-    die('Zugriff verweigert.');
+    app_abort('Zugriff verweigert.', 403);
 }
 
 $db = db();
@@ -27,13 +28,15 @@ $allowedLocationIds = get_allowed_ids($locations);
 $allowedDepartmentIds = get_allowed_ids($departments);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
+
     $supplier = trim((string)($_POST['supplier'] ?? ''));
     $contract_subject = trim((string)($_POST['contract_subject'] ?? ''));
     $contract_start = (string)($_POST['contract_start'] ?? '');
     $duration_months = (int)($_POST['duration_months'] ?? 0);
-    $termination_period_months = (int)($_POST['termination_period_months'] ?? 0);
+    $termination_period_months = (int)($_POST['termination_period_months'] ?? -1);
     $termination_text = trim((string)($_POST['termination_text'] ?? ''));
-    $status = (string)($_POST['status'] ?? 'active');
+    $status = (string)($_POST['status'] ?? '');
     $responsible_user_id = (int)($_POST['responsible_user_id'] ?? 0);
     $location_ids = $_POST['location_ids'] ?? [];
     $department_ids = $_POST['department_ids'] ?? [];
@@ -49,14 +52,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $validatedLocationIds = validate_selected_ids($location_ids, $allowedLocationIds);
     $validatedDepartmentIds = validate_selected_ids($department_ids, $allowedDepartmentIds);
 
-    if ($supplier === '' || $contract_start === '' || $duration_months <= 0) {
-        $error = 'Pflichtfelder fehlen.';
+    if (
+        $supplier === '' ||
+        $contract_subject === '' ||
+        $contract_start === '' ||
+        $duration_months <= 0 ||
+        $termination_period_months < 0 ||
+        $termination_text === '' ||
+        $responsible_user_id <= 0 ||
+        $validatedLocationIds === [] ||
+        $validatedDepartmentIds === []
+    ) {
+        $error = 'Alle Felder sind Pflichtfelder. Bitte alles ausfüllen und mindestens einen Standort/Abteilung wählen.';
     } elseif (!in_array($status, allowed_contract_statuses(), true)) {
         $error = 'Ungültiger Status.';
+    } elseif (!isset($_FILES['contract_file']) || (int)$_FILES['contract_file']['error'] === UPLOAD_ERR_NO_FILE) {
+        $error = 'Bitte beim Anlegen direkt ein Dokument hochladen.';
     } else {
         $contract_end = date('Y-m-d', strtotime($contract_start . " +$duration_months months"));
 
-        $stmt = $db->prepare("
+        $stmt = db_prepare($db, "
             INSERT INTO contracts
             (
                 supplier,
@@ -70,11 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 responsible_user_id
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-
-        if (!$stmt) {
-            die('Prepare-Fehler: ' . $db->error);
-        }
+        ", 'contract_create_insert_contract');
 
         $stmt->bind_param(
             'sssissssi',
@@ -89,50 +100,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $responsible_user_id
         );
 
-        if ($stmt->execute()) {
-            $contractId = (int)$stmt->insert_id;
-            $stmt->close();
+        if (!$stmt->execute()) {
+            app_log('contract_create_insert_contract_execute', $stmt->error);
+            $error = 'Daten konnten nicht gespeichert werden.';
+        }
 
-            if (!empty($validatedLocationIds)) {
-                $stmtLoc = $db->prepare("
-                    INSERT INTO contract_locations (contract_id, location_id)
-                    VALUES (?, ?)
-                ");
+        $contractId = (int)$stmt->insert_id;
+        $stmt->close();
 
-                if (!$stmtLoc) {
-                    die('Prepare-Fehler Standorte: ' . $db->error);
-                }
+        if ($error === '') {
+            $stmtLoc = db_prepare($db, "
+                INSERT INTO contract_locations (contract_id, location_id)
+                VALUES (?, ?)
+            ", 'contract_create_insert_locations');
 
-                foreach ($validatedLocationIds as $locId) {
-                    $stmtLoc->bind_param('ii', $contractId, $locId);
-                    $stmtLoc->execute();
-                }
+            foreach ($validatedLocationIds as $locId) {
+                $stmtLoc->bind_param('ii', $contractId, $locId);
+                $stmtLoc->execute();
+            }
+            $stmtLoc->close();
 
-                $stmtLoc->close();
+            $stmtDept = db_prepare($db, "
+                INSERT INTO contract_departments (contract_id, department_id)
+                VALUES (?, ?)
+            ", 'contract_create_insert_departments');
+
+            foreach ($validatedDepartmentIds as $deptId) {
+                $stmtDept->bind_param('ii', $contractId, $deptId);
+                $stmtDept->execute();
+            }
+            $stmtDept->close();
+
+            $uploadBasePath = CONTRACT_UPLOAD_BASE_PATH;
+            $safeSupplier = preg_replace('/[^A-Za-z0-9_-]/', '_', $supplier) ?: 'vertrag';
+            $contractFolder = $uploadBasePath . '/' . $contractId . '_' . $safeSupplier;
+
+            if (!is_dir($contractFolder) && !mkdir($contractFolder, 0775, true) && !is_dir($contractFolder)) {
+                $error = 'Upload-Ordner konnte nicht erstellt werden.';
             }
 
-            if (!empty($validatedDepartmentIds)) {
-                $stmtDept = $db->prepare("
-                    INSERT INTO contract_departments (contract_id, department_id)
-                    VALUES (?, ?)
-                ");
+            if ($error === '') {
+                $fileError = (int)$_FILES['contract_file']['error'];
+                $tmpName = (string)$_FILES['contract_file']['tmp_name'];
+                $originalName = (string)$_FILES['contract_file']['name'];
+                $fileSize = (int)$_FILES['contract_file']['size'];
 
-                if (!$stmtDept) {
-                    die('Prepare-Fehler Abteilungen: ' . $db->error);
+                if ($fileError !== UPLOAD_ERR_OK) {
+                    $error = 'Fehler beim Datei-Upload.';
+                } elseif ($fileSize <= 0 || $fileSize > CONTRACT_MAX_UPLOAD_BYTES) {
+                    $error = 'Datei fehlt oder ist größer als 20 MB.';
+                } else {
+                    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                    if (!in_array($ext, ['pdf', 'doc', 'docx'], true)) {
+                        $error = 'Erlaubt sind nur PDF, DOC, DOCX.';
+                    } else {
+                        $timestamp = date('Ymd_His');
+                        $targetFileName = $safeSupplier . '_' . $timestamp . '.' . $ext;
+                        $targetPath = $contractFolder . '/' . $targetFileName;
+
+                        if (!move_uploaded_file($tmpName, $targetPath)) {
+                            $error = 'Datei konnte nicht gespeichert werden.';
+                        } else {
+                            $stmtFile = db_prepare($db, "
+                                INSERT INTO contract_files (contract_id, file_name, file_path)
+                                VALUES (?, ?, ?)
+                            ", 'contract_create_insert_file');
+
+                            $stmtFile->bind_param('iss', $contractId, $targetFileName, $targetPath);
+                            $stmtFile->execute();
+                            $stmtFile->close();
+                        }
+                    }
                 }
-
-                foreach ($validatedDepartmentIds as $deptId) {
-                    $stmtDept->bind_param('ii', $contractId, $deptId);
-                    $stmtDept->execute();
-                }
-
-                $stmtDept->close();
             }
+        }
 
-            $success = 'Vertrag gespeichert.';
-        } else {
-            $error = 'Fehler beim Speichern: ' . $stmt->error;
-            $stmt->close();
+        if ($error === '') {
+            $success = 'Vertrag inklusive Dokument wurde gespeichert.';
         }
     }
 }
@@ -141,6 +185,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/app.css">
     <title>Vertrag anlegen</title>
 </head>
 <body>
@@ -161,28 +207,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p style="color:green;"><?php echo htmlspecialchars($success, ENT_QUOTES, 'UTF-8'); ?></p>
 <?php endif; ?>
 
-<form method="post">
+<form method="post" enctype="multipart/form-data">
+    <?php echo csrf_input(); ?>
 
-    <label for="supplier">Lieferant</label><br>
+    <label for="supplier">Lieferant *</label><br>
     <input type="text" id="supplier" name="supplier" required><br><br>
 
-    <label for="contract_subject">Vertragsgegenstand</label><br>
-    <textarea id="contract_subject" name="contract_subject" rows="4" cols="60"></textarea><br><br>
+    <label for="contract_subject">Vertragsgegenstand *</label><br>
+    <textarea id="contract_subject" name="contract_subject" rows="4" cols="60" required></textarea><br><br>
 
-    <label for="contract_start">Vertragsbeginn</label><br>
+    <label for="contract_start">Vertragsbeginn *</label><br>
     <input type="date" id="contract_start" name="contract_start" required><br><br>
 
-    <label for="duration_months">Laufzeit (Monate)</label><br>
+    <label for="duration_months">Laufzeit (Monate) *</label><br>
     <input type="number" id="duration_months" name="duration_months" min="1" required><br><br>
 
-    <label for="termination_period_months">Kündigungsfrist (Monate)</label><br>
-    <input type="number" id="termination_period_months" name="termination_period_months" min="0"><br><br>
+    <label for="termination_period_months">Kündigungsfrist (Monate) *</label><br>
+    <input type="number" id="termination_period_months" name="termination_period_months" min="0" required><br><br>
 
-    <label for="termination_text">Kündigungsbedingungen</label><br>
-    <textarea id="termination_text" name="termination_text" rows="4" cols="60"></textarea><br><br>
+    <label for="termination_text">Kündigungsbedingungen *</label><br>
+    <textarea id="termination_text" name="termination_text" rows="4" cols="60" required></textarea><br><br>
 
-    <label for="status">Status</label><br>
-    <select id="status" name="status">
+    <label for="status">Status *</label><br>
+    <select id="status" name="status" required>
+        <option value="">-- auswählen --</option>
         <option value="active">Aktiv</option>
         <option value="terminated">Gekündigt</option>
         <option value="ended">Beendet</option>
@@ -190,8 +238,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <option value="archived">Archiviert</option>
     </select><br><br>
 
-    <label for="responsible_user_id">Verantwortlicher</label><br>
-    <select id="responsible_user_id" name="responsible_user_id">
+    <label for="responsible_user_id">Verantwortlicher *</label><br>
+    <select id="responsible_user_id" name="responsible_user_id" required>
         <option value="0">-- auswählen --</option>
         <?php foreach ($users as $userItem): ?>
             <option value="<?php echo (int)$userItem['id']; ?>">
@@ -200,26 +248,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endforeach; ?>
     </select><br><br>
 
-    <label for="location_ids">Standorte</label><br>
-    <select id="location_ids" name="location_ids[]" multiple size="5">
+    <label>Standorte * (mind. 1)</label><br>
+    <div class="check-grid">
         <?php foreach ($locations as $location): ?>
-            <option value="<?php echo (int)$location['id']; ?>">
+            <label>
+                <input type="checkbox" name="location_ids[]" value="<?php echo (int)$location['id']; ?>">
                 <?php echo htmlspecialchars((string)$location['name'], ENT_QUOTES, 'UTF-8'); ?>
-            </option>
+            </label>
         <?php endforeach; ?>
-    </select><br><br>
+    </div><br>
 
-    <label for="department_ids">Abteilungen</label><br>
-    <select id="department_ids" name="department_ids[]" multiple size="5">
+    <label>Abteilungen * (mind. 1)</label><br>
+    <div class="check-grid">
         <?php foreach ($departments as $department): ?>
-            <option value="<?php echo (int)$department['id']; ?>">
+            <label>
+                <input type="checkbox" name="department_ids[]" value="<?php echo (int)$department['id']; ?>">
                 <?php echo htmlspecialchars((string)$department['name'], ENT_QUOTES, 'UTF-8'); ?>
-            </option>
+            </label>
         <?php endforeach; ?>
-    </select><br><br>
+    </div><br>
+
+    <label for="contract_file">Dokument * (PDF/DOC/DOCX)</label><br>
+    <input type="file" id="contract_file" name="contract_file" accept=".pdf,.doc,.docx" required><br><br>
 
     <button type="submit">Speichern</button>
-
 </form>
 
 </body>
