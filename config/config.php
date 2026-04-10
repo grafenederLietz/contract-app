@@ -42,17 +42,20 @@ header('Referrer-Policy: same-origin');
 define('CONTRACT_UPLOAD_BASE_PATH', 'C:/Vertragsdaten/Uploads');
 define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
 
+function app_log($context, $details = '')
 function app_log(string $context, string $details = ''): void
 {
     error_log('[contract-app][' . $context . '] ' . $details);
 }
 
+function app_abort($message = 'Interner Fehler.', $statusCode = 500)
 function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): void
 {
     http_response_code($statusCode);
     exit($message);
 }
 
+function load_local_config()
 function load_local_config(): array
 {
     static $cached = null;
@@ -80,6 +83,7 @@ function load_local_config(): array
     return $cached;
 }
 
+function db()
 function app_log(string $context, string $details = ''): void
 {
     error_log('[contract-app][' . $context . '] ' . $details);
@@ -157,6 +161,9 @@ function db(): mysqli
     return $mysqli;
 }
 
+function db_prepare($db, $sql, $context)
+{
+    $stmt = $db->prepare($sql);
 function db_prepare(mysqli $db, string $sql, string $context): mysqli_stmt
 {
     $stmt = $db->prepare($sql);
