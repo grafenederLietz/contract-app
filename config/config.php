@@ -42,6 +42,17 @@ header('Referrer-Policy: same-origin');
 define('CONTRACT_UPLOAD_BASE_PATH', 'C:/Vertragsdaten/Uploads');
 define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
 
+function app_log(string $context, string $details = ''): void
+{
+    error_log('[contract-app][' . $context . '] ' . $details);
+}
+
+function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): void
+{
+    http_response_code($statusCode);
+    exit($message);
+}
+
 function load_local_config(): array
 {
     static $cached = null;
@@ -91,6 +102,17 @@ function db(): mysqli
 
     $local = load_local_config();
 
+    $dbHost = isset($local['db_host']) ? (string)$local['db_host'] : '';
+    $dbName = isset($local['db_name']) ? (string)$local['db_name'] : '';
+    $dbUser = isset($local['db_user']) ? (string)$local['db_user'] : '';
+    $dbPass = isset($local['db_pass']) ? (string)$local['db_pass'] : '';
+
+    if ($dbHost === '' || $dbName === '' || $dbUser === '' || $dbPass === '') {
+        app_log('config', 'DB-Konfiguration unvollständig: config/local.php muss db_host, db_name, db_user und db_pass enthalten.');
+        app_abort('Konfigurationsfehler.', 500);
+    }
+
+    mysqli_report(MYSQLI_REPORT_OFF);
     $dbHost = getenv('CONTRACTAPP_DB_HOST')
         ?: (isset($local['db_host']) ? (string)$local['db_host'] : '127.0.0.1');
     $dbName = getenv('CONTRACTAPP_DB_NAME')
