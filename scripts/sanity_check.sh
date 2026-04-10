@@ -22,6 +22,11 @@ if rg -n "function\s+app_abort\([^)]*\)\s*:\s*void\s*$" config/config.php >/dev/
   exit 1
 fi
 
+if rg -n "\$dbPass\s*=\s*['\"][^'\"]+['\"]\s*;" config/config.php >/dev/null; then
+  echo "Fehler: Klartext-Passwortzuweisung (\$dbPass = '...') in config/config.php gefunden."
+  exit 1
+fi
+
 if rg -n "\\\\n" config/config.php >/dev/null; then
   echo "Warnung: Literal \\n in config/config.php gefunden (möglicher fehlerhafter Copy/Paste-Stand)."
 fi
