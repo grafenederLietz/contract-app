@@ -1,0 +1,7 @@
+<?php
+return [
+    'db_host' => '127.0.0.1',
+    'db_name' => 'contractdb',
+    'db_user' => 'contractapp_user',
+    'db_pass' => 'SET_REAL_PASSWORD_HERE',
+];

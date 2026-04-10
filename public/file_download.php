@@ -48,6 +48,22 @@ $filePath = (string)$file['file_path'];
 if (!file_exists($filePath)) {
     app_log('file_download_missing', $filePath);
     app_abort('Datei nicht gefunden.', 404);
+}
+
+$extension = strtolower(pathinfo((string)$file['file_name'], PATHINFO_EXTENSION));
+$allowedMimeByExt = [
+    'pdf' => 'application/pdf',
+    'doc' => 'application/msword',
+    'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+$detectedMime = mime_content_type($filePath) ?: 'application/octet-stream';
+$mime = $allowedMimeByExt[$extension] ?? 'application/octet-stream';
+if ($mime === 'application/octet-stream') {
+    app_log('file_download_mime_fallback', 'extension=' . $extension . ';detected=' . $detectedMime);
+}
+
+header('Content-Type: ' . $mime);
+header('Content-Disposition: attachment; filename="' . basename((string)$file['file_name']) . '"');
     die('Datei existiert nicht auf dem Server.');
 }
 

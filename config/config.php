@@ -42,6 +42,33 @@ header('Referrer-Policy: same-origin');
 define('CONTRACT_UPLOAD_BASE_PATH', 'C:/Vertragsdaten/Uploads');
 define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
 
+function load_local_config(): array
+{
+    static $cached = null;
+
+    if (is_array($cached)) {
+        return $cached;
+    }
+
+    $localConfigFile = __DIR__ . '/local.php';
+
+    if (!is_file($localConfigFile)) {
+        $cached = [];
+        return $cached;
+    }
+
+    $data = require $localConfigFile;
+
+    if (!is_array($data)) {
+        app_log('config', 'config/local.php ist kein Array.');
+        $cached = [];
+        return $cached;
+    }
+
+    $cached = $data;
+    return $cached;
+}
+
 function app_log(string $context, string $details = ''): void
 {
     error_log('[contract-app][' . $context . '] ' . $details);
@@ -61,6 +88,23 @@ function db(): mysqli
         return $mysqli;
     }
 
+    $local = load_local_config();
+
+    $dbHost = getenv('CONTRACTAPP_DB_HOST')
+        ?: (isset($local['db_host']) ? (string)$local['db_host'] : '127.0.0.1');
+    $dbName = getenv('CONTRACTAPP_DB_NAME')
+        ?: (isset($local['db_name']) ? (string)$local['db_name'] : 'contractdb');
+    $dbUser = getenv('CONTRACTAPP_DB_USER')
+        ?: (isset($local['db_user']) ? (string)$local['db_user'] : 'contractapp_user');
+
+    $dbPass = getenv('CONTRACTAPP_DB_PASS');
+    if ((!is_string($dbPass) || $dbPass === '') && isset($local['db_pass'])) {
+        $dbPass = (string)$local['db_pass'];
+    }
+
+    if (!is_string($dbPass) || $dbPass === '') {
+        app_log('config', 'CONTRACTAPP_DB_PASS fehlt (und kein config/local.php db_pass gesetzt).');
+        app_abort('Konfigurationsfehler.', 500);
     $dbHost = getenv('CONTRACTAPP_DB_HOST') ?: '127.0.0.1';
     $dbName = getenv('CONTRACTAPP_DB_NAME') ?: 'contractdb';
     $dbUser = getenv('CONTRACTAPP_DB_USER') ?: 'contractapp_user';

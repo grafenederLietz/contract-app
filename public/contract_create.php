@@ -70,6 +70,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Bitte beim Anlegen direkt ein Dokument hochladen.';
     } else {
         $contract_end = date('Y-m-d', strtotime($contract_start . " +$duration_months months"));
+        $contractId = 0;
+        $targetPath = '';
+        $db->begin_transaction();
+
+        try {
+            $stmt = db_prepare($db, "
+                INSERT INTO contracts
+                (
+                    supplier,
+                    contract_subject,
+                    contract_start,
+                    duration_months,
+                    contract_end,
+                    termination_period_months,
+                    termination_text,
+                    status,
+                    responsible_user_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ", 'contract_create_insert_contract');
+
+            $stmt->bind_param(
+                'sssissssi',
+                $supplier,
+                $contract_subject,
+                $contract_start,
+                $duration_months,
+                $contract_end,
+                $termination_period_months,
+                $termination_text,
+                $status,
+                $responsible_user_id
+            );
+
+            if (!$stmt->execute()) {
+                throw new RuntimeException('Contract insert failed');
+            }
+
+            $contractId = (int)$stmt->insert_id;
+            $stmt->close();
+
 
         $stmt = db_prepare($db, "
             INSERT INTO contracts
@@ -136,6 +177,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $contractFolder = $uploadBasePath . '/' . $contractId . '_' . $safeSupplier;
 
             if (!is_dir($contractFolder) && !mkdir($contractFolder, 0775, true) && !is_dir($contractFolder)) {
+                throw new RuntimeException('Upload folder create failed');
+            }
+
+            $fileError = (int)$_FILES['contract_file']['error'];
+            $tmpName = (string)$_FILES['contract_file']['tmp_name'];
+            $originalName = (string)$_FILES['contract_file']['name'];
+            $fileSize = (int)$_FILES['contract_file']['size'];
+
+            if ($fileError !== UPLOAD_ERR_OK) {
+                throw new RuntimeException('Upload error');
+            }
+            if ($fileSize <= 0 || $fileSize > CONTRACT_MAX_UPLOAD_BYTES) {
+                throw new RuntimeException('Upload size invalid');
+            }
+
+            $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+            $allowedExt = ['pdf', 'doc', 'docx'];
+            if (!in_array($ext, $allowedExt, true)) {
+                throw new RuntimeException('Upload extension invalid');
+            }
+
+            $allowedMimeByExt = [
+                'pdf' => ['application/pdf'],
+                'doc' => ['application/msword', 'application/octet-stream'],
+                'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
+            ];
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = is_resource($finfo) ? (string)finfo_file($finfo, $tmpName) : '';
+            if (is_resource($finfo)) {
+                finfo_close($finfo);
+            }
+            if (!in_array($mime, $allowedMimeByExt[$ext], true)) {
+                throw new RuntimeException('Upload mime invalid: ' . $mime);
+            }
+
+            $timestamp = date('Ymd_His');
+            $targetFileName = $safeSupplier . '_' . $timestamp . '.' . $ext;
+            $targetPath = $contractFolder . '/' . $targetFileName;
+
+            if (!move_uploaded_file($tmpName, $targetPath)) {
+                throw new RuntimeException('Upload move failed');
+            }
+
+            $stmtFile = db_prepare($db, "
+                INSERT INTO contract_files (contract_id, file_name, file_path)
+                VALUES (?, ?, ?)
+            ", 'contract_create_insert_file');
+
+            $stmtFile->bind_param('iss', $contractId, $targetFileName, $targetPath);
+            $stmtFile->execute();
+            $stmtFile->close();
+
+            $db->commit();
+            $success = 'Vertrag inklusive Dokument wurde gespeichert.';
+        } catch (Throwable $e) {
+            $db->rollback();
+            if ($targetPath !== '' && is_file($targetPath)) {
+                @unlink($targetPath);
+            }
+            app_log('contract_create_txn', $e->getMessage());
+            $error = 'Daten konnten nicht vollständig gespeichert werden. Es wurde nichts übernommen.';
                 $error = 'Upload-Ordner konnte nicht erstellt werden.';
             }
 
