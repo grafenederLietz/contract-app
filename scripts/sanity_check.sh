@@ -18,6 +18,9 @@ done < <(rg --files -g '*.php')
 echo "[3/3] Schnelle Integritätschecks ..."
 if [ "$(rg -n "function\s+app_abort\s*\(" config/config.php | wc -l)" -gt 1 ]; then
   echo "Fehler: app_abort() mehrfach in config/config.php gefunden."
+if rg -n "function\s+app_abort\([^)]*\)\s*:\s*void\s*$" config/config.php >/dev/null \
+  && rg -n "function\s+app_abort\([^)]*\)\s*:\s*never\s*$" config/config.php >/dev/null; then
+  echo "Fehler: app_abort() doppelt (void/never) in config/config.php gefunden."
   exit 1
 fi
 

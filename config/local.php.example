@@ -2,6 +2,7 @@
 // Anleitung:
 // 1) Diese Datei kopieren nach: config/local.php
 // 2) In config/local.php ALLE vier DB-Werte setzen (db_host, db_name, db_user, db_pass)
+// 2) In config/local.php das echte DB-Passwort eintragen
 // 3) config/local.php bleibt lokal (ist via .gitignore aus Git ausgeschlossen)
 return [
     'db_host' => '127.0.0.1',

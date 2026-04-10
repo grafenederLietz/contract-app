@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
@@ -41,17 +43,20 @@ define('CONTRACT_UPLOAD_BASE_PATH', 'C:/Vertragsdaten/Uploads');
 define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
 
 function app_log($context, $details = '')
+function app_log(string $context, string $details = ''): void
 {
     error_log('[contract-app][' . $context . '] ' . $details);
 }
 
 function app_abort($message = 'Interner Fehler.', $statusCode = 500)
+function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): void
 {
     http_response_code($statusCode);
     exit($message);
 }
 
 function load_local_config()
+function load_local_config(): array
 {
     static $cached = null;
 
@@ -60,12 +65,14 @@ function load_local_config()
     }
 
     $localConfigFile = __DIR__ . '/local.php';
+
     if (!is_file($localConfigFile)) {
         $cached = [];
         return $cached;
     }
 
     $data = require $localConfigFile;
+
     if (!is_array($data)) {
         app_log('config', 'config/local.php ist kein Array.');
         $cached = [];
@@ -77,6 +84,19 @@ function load_local_config()
 }
 
 function db()
+function app_log(string $context, string $details = ''): void
+{
+    error_log('[contract-app][' . $context . '] ' . $details);
+}
+
+function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): void
+function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): never
+{
+    http_response_code($statusCode);
+    exit($message);
+}
+
+function db(): mysqli
 {
     static $mysqli = null;
 
@@ -97,6 +117,35 @@ function db()
     }
 
     mysqli_report(MYSQLI_REPORT_OFF);
+    $dbHost = getenv('CONTRACTAPP_DB_HOST')
+        ?: (isset($local['db_host']) ? (string)$local['db_host'] : '127.0.0.1');
+    $dbName = getenv('CONTRACTAPP_DB_NAME')
+        ?: (isset($local['db_name']) ? (string)$local['db_name'] : 'contractdb');
+    $dbUser = getenv('CONTRACTAPP_DB_USER')
+        ?: (isset($local['db_user']) ? (string)$local['db_user'] : 'contractapp_user');
+
+    $dbPass = getenv('CONTRACTAPP_DB_PASS');
+    if ((!is_string($dbPass) || $dbPass === '') && isset($local['db_pass'])) {
+        $dbPass = (string)$local['db_pass'];
+    }
+
+    if (!is_string($dbPass) || $dbPass === '') {
+        app_log('config', 'CONTRACTAPP_DB_PASS fehlt (und kein config/local.php db_pass gesetzt).');
+        app_abort('Konfigurationsfehler.', 500);
+    $dbHost = getenv('CONTRACTAPP_DB_HOST') ?: '127.0.0.1';
+    $dbName = getenv('CONTRACTAPP_DB_NAME') ?: 'contractdb';
+    $dbUser = getenv('CONTRACTAPP_DB_USER') ?: 'contractapp_user';
+
+    // Schritt 1 Stabilität: ENV bevorzugen, sonst Legacy-Fallback nutzen.
+    $dbPass = getenv('CONTRACTAPP_DB_PASS');
+    if (!is_string($dbPass) || $dbPass === '') {
+        app_log('config', 'CONTRACTAPP_DB_PASS fehlt.');
+        app_abort('Konfigurationsfehler.', 500);
+        $dbPass = 'jREIOV0jkO6Q5dN23OYV';
+    }
+
+    mysqli_report(MYSQLI_REPORT_OFF);
+
     $mysqli = @new mysqli($dbHost, $dbUser, $dbPass, $dbName);
 
     if ($mysqli->connect_error) {
@@ -115,6 +164,10 @@ function db()
 function db_prepare($db, $sql, $context)
 {
     $stmt = $db->prepare($sql);
+function db_prepare(mysqli $db, string $sql, string $context): mysqli_stmt
+{
+    $stmt = $db->prepare($sql);
+
     if (!$stmt) {
         app_log($context, $db->error);
         app_abort('Datenbank-Fehler.', 500);
