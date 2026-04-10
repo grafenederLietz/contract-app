@@ -12,6 +12,7 @@ $db = db();
 $file_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($file_id <= 0) {
+    app_abort('Ungültige Datei-ID.', 400);
     die('Ungültige Datei-ID.');
 }
 
@@ -25,6 +26,8 @@ $stmt = $db->prepare("
 ");
 
 if (!$stmt) {
+    app_log('file_download_prepare', $db->error);
+    app_abort('Datenbank-Fehler.', 500);
     app_log('db-prepare', $db->error);
             app_abort('Datenbank-Fehler.', 500);
 }
@@ -36,12 +39,15 @@ $file = $result->fetch_assoc();
 $stmt->close();
 
 if (!$file) {
+    app_abort('Datei nicht gefunden.', 404);
     die('Datei nicht gefunden.');
 }
 
 $filePath = (string)$file['file_path'];
 
 if (!file_exists($filePath)) {
+    app_log('file_download_missing', $filePath);
+    app_abort('Datei nicht gefunden.', 404);
     die('Datei existiert nicht auf dem Server.');
 }
 
@@ -51,4 +57,5 @@ header('Content-Disposition: inline; filename="' . basename((string)$file['file_
 header('Content-Length: ' . filesize($filePath));
 
 readfile($filePath);
+exit;
 exit;

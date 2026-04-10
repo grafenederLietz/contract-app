@@ -9,6 +9,7 @@ require_login();
 $user = current_user();
 
 if (($user['role'] ?? '') !== 'admin') {
+    app_abort('Zugriff verweigert.', 403);
     die('Zugriff verweigert.');
 }
 
@@ -29,6 +30,8 @@ $result = $db->query("
 ");
 
 if (!$result) {
+    app_log('users_list_query', $db->error);
+    app_abort('Datenbank-Fehler.', 500);
     die('SQL Fehler: ' . $db->error);
 }
 ?>
@@ -79,4 +82,5 @@ if (!$result) {
 </table>
 
 </body>
+</html>
 </html>

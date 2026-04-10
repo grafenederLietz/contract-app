@@ -10,6 +10,7 @@ require_login();
 $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
+    app_abort('Zugriff verweigert.', 403);
     die('Zugriff verweigert.');
 }
 
@@ -97,4 +98,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </form>
 
 </body>
+</html>
 </html>

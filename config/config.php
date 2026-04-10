@@ -68,6 +68,8 @@ function db(): mysqli
     // Schritt 1 Stabilität: ENV bevorzugen, sonst Legacy-Fallback nutzen.
     $dbPass = getenv('CONTRACTAPP_DB_PASS');
     if (!is_string($dbPass) || $dbPass === '') {
+        app_log('config', 'CONTRACTAPP_DB_PASS fehlt.');
+        app_abort('Konfigurationsfehler.', 500);
         $dbPass = 'jREIOV0jkO6Q5dN23OYV';
     }
 

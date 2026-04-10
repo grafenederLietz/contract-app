@@ -10,6 +10,7 @@ require_login();
 $user = current_user();
 
 if (($user['role'] ?? '') !== 'admin') {
+    app_abort('Zugriff verweigert.', 403);
     die('Zugriff verweigert.');
 }
 
