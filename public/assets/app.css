@@ -1,3 +1,5 @@
+/* Kompatibilitäts-Wrapper: zentrale Styles liegen in /public/app.css */
+@import url('../app.css');
 :root {
   --bg: #f3f5f9;
   --card: #ffffff;

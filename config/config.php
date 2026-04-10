@@ -74,6 +74,7 @@ function app_log(string $context, string $details = ''): void
     error_log('[contract-app][' . $context . '] ' . $details);
 }
 
+function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): void
 function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): never
 {
     http_response_code($statusCode);
