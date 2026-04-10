@@ -78,20 +78,6 @@ function load_local_config(): array
     return $cached;
 }
 
-function config_value(string $envKey, array $localConfig, string $localKey, string $default): string
-{
-    $envValue = getenv($envKey);
-    if (is_string($envValue) && $envValue !== '') {
-        return $envValue;
-    }
-
-    if (isset($localConfig[$localKey])) {
-        return (string)$localConfig[$localKey];
-    }
-
-    return $default;
-}
-
 function db(): mysqli
 {
     static $mysqli = null;
@@ -102,17 +88,13 @@ function db(): mysqli
 
     $local = load_local_config();
 
-    $dbHost = config_value('CONTRACTAPP_DB_HOST', $local, 'db_host', '127.0.0.1');
-    $dbName = config_value('CONTRACTAPP_DB_NAME', $local, 'db_name', 'contractdb');
-    $dbUser = config_value('CONTRACTAPP_DB_USER', $local, 'db_user', 'contractapp_user');
+    $dbHost = isset($local['db_host']) ? (string)$local['db_host'] : '';
+    $dbName = isset($local['db_name']) ? (string)$local['db_name'] : '';
+    $dbUser = isset($local['db_user']) ? (string)$local['db_user'] : '';
+    $dbPass = isset($local['db_pass']) ? (string)$local['db_pass'] : '';
 
-    $dbPass = getenv('CONTRACTAPP_DB_PASS');
-    if ((!is_string($dbPass) || $dbPass === '') && isset($local['db_pass'])) {
-        $dbPass = (string)$local['db_pass'];
-    }
-
-    if (!is_string($dbPass) || $dbPass === '') {
-        app_log('config', 'CONTRACTAPP_DB_PASS fehlt (und kein config/local.php db_pass gesetzt).');
+    if ($dbHost === '' || $dbName === '' || $dbUser === '' || $dbPass === '') {
+        app_log('config', 'DB-Konfiguration unvollständig: config/local.php muss db_host, db_name, db_user und db_pass enthalten.');
         app_abort('Konfigurationsfehler.', 500);
     }
 
