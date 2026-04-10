@@ -17,6 +17,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id <= 0) {
     app_abort('Ungültige Vertrags-ID.', 400);
+    die('Ungültige Vertrags-ID.');
 }
 
 require_contract_access($db, $userId, $userRole, $id);
@@ -56,6 +57,7 @@ $stmt->close();
 
 if (!$contract) {
     app_abort('Vertrag nicht gefunden.', 404);
+    die('Vertrag nicht gefunden.');
 }
 
 $users = get_active_users($db);
@@ -72,12 +74,14 @@ if ($userRole !== 'admin') {
     foreach ($selectedLocations as $locationId) {
         if (!in_array($locationId, $allowedLocationIds, true)) {
             app_abort('Zugriff verweigert.', 403);
+            die('Zugriff verweigert.');
         }
     }
 
     foreach ($selectedDepartments as $departmentId) {
         if (!in_array($departmentId, $allowedDepartmentIds, true)) {
             app_abort('Zugriff verweigert.', 403);
+            die('Zugriff verweigert.');
         }
     }
 }
@@ -86,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
     if (!can_manage_contracts()) {
         app_abort('Zugriff verweigert.', 403);
+        die('Zugriff verweigert.');
     }
 
     $supplier = trim((string)($_POST['supplier'] ?? ''));
@@ -233,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!mkdir($contractFolder, 0775, true) && !is_dir($contractFolder)) {
                         app_log('upload_folder_create', $contractFolder);
                         app_abort('Upload-Ordner konnte nicht erstellt werden.', 500);
+                        die('Upload-Ordner konnte nicht erstellt werden.');
                     }
                 }
 
