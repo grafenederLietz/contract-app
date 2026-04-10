@@ -11,6 +11,7 @@ $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
+    die('Zugriff verweigert.');
 }
 
 $db = db();
@@ -19,6 +20,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id <= 0) {
     app_abort('Ungültige Benutzer-ID.', 400);
+    die('Ungültige Benutzer-ID.');
 }
 
 $error = '';
@@ -44,6 +46,7 @@ $stmt->close();
 
 if (!$editUser) {
     app_abort('Benutzer nicht gefunden.', 404);
+    die('Benutzer nicht gefunden.');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -272,6 +275,7 @@ $departments = $db->query("
 if (!$departments) {
     app_log('user_edit_load_departments', $db->error);
     app_abort('Datenbank-Fehler.', 500);
+    die('Fehler beim Laden der Abteilungen: ' . $db->error);
 }
 
 $locations = $db->query("
@@ -283,6 +287,7 @@ $locations = $db->query("
 if (!$locations) {
     app_log('user_edit_load_locations', $db->error);
     app_abort('Datenbank-Fehler.', 500);
+    die('Fehler beim Laden der Standorte: ' . $db->error);
 }
 ?>
 <!DOCTYPE html>

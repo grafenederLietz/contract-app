@@ -75,6 +75,7 @@ function app_log(string $context, string $details = ''): void
 }
 
 function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): void
+function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): never
 {
     http_response_code($statusCode);
     exit($message);
@@ -105,6 +106,16 @@ function db(): mysqli
     if (!is_string($dbPass) || $dbPass === '') {
         app_log('config', 'CONTRACTAPP_DB_PASS fehlt (und kein config/local.php db_pass gesetzt).');
         app_abort('Konfigurationsfehler.', 500);
+    $dbHost = getenv('CONTRACTAPP_DB_HOST') ?: '127.0.0.1';
+    $dbName = getenv('CONTRACTAPP_DB_NAME') ?: 'contractdb';
+    $dbUser = getenv('CONTRACTAPP_DB_USER') ?: 'contractapp_user';
+
+    // Schritt 1 Stabilität: ENV bevorzugen, sonst Legacy-Fallback nutzen.
+    $dbPass = getenv('CONTRACTAPP_DB_PASS');
+    if (!is_string($dbPass) || $dbPass === '') {
+        app_log('config', 'CONTRACTAPP_DB_PASS fehlt.');
+        app_abort('Konfigurationsfehler.', 500);
+        $dbPass = 'jREIOV0jkO6Q5dN23OYV';
     }
 
     mysqli_report(MYSQLI_REPORT_OFF);
