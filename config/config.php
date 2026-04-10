@@ -70,6 +70,7 @@ function db(): mysqli
     if (!is_string($dbPass) || $dbPass === '') {
         app_log('config', 'CONTRACTAPP_DB_PASS fehlt.');
         app_abort('Konfigurationsfehler.', 500);
+        $dbPass = 'jREIOV0jkO6Q5dN23OYV';
     }
 
     mysqli_report(MYSQLI_REPORT_OFF);
