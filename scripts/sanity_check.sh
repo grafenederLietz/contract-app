@@ -16,6 +16,8 @@ while IFS= read -r file; do
 done < <(rg --files -g '*.php')
 
 echo "[3/3] Schnelle Integritätschecks ..."
+php scripts/verify_config.php
+
 if rg -n "^function .*[)]\s*$" config/config.php >/dev/null; then
   echo "Fehler: Funktions-Deklarationen in config/config.php müssen die öffnende Klammer auf derselben Zeile haben."
   exit 1
