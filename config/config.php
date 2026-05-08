@@ -22,6 +22,19 @@ ini_set('session.cookie_samesite', 'Lax');
 $isHttps = !empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off';
 
 session_name('CONTRACTAPPSESSID');
+if (defined('PHP_VERSION_ID') && PHP_VERSION_ID >= 70300) {
+    ini_set('session.cookie_samesite', 'Lax');
+    session_set_cookie_params(array(
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ));
+} else {
+    session_set_cookie_params(0, '/', '', $isHttps, true);
+}
 session_set_cookie_params([
     'lifetime' => 0,
     'path' => '/',
@@ -35,6 +48,31 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: same-origin');
+}
+
+if (!defined('CONTRACT_UPLOAD_BASE_PATH')) {
+    define('CONTRACT_UPLOAD_BASE_PATH', 'C:/Vertragsdaten/Uploads');
+}
+if (!defined('CONTRACT_MAX_UPLOAD_BYTES')) {
+    define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
+}
+
+function app_log($context, $details = '') {
+    error_log('[contract-app][' . $context . '] ' . $details);
+}
+
+function app_abort($message = 'Interner Fehler.', $statusCode = 500) {
+    if (!headers_sent()) {
+        http_response_code((int)$statusCode);
+    }
+    exit($message);
+}
+
+function load_local_config() {
 header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
@@ -65,6 +103,9 @@ function load_local_config(): array
     }
 
     $localConfigFile = __DIR__ . '/local.php';
+    if (!is_file($localConfigFile)) {
+        app_log('config', 'config/local.php fehlt.');
+        $cached = array();
 
     if (!is_file($localConfigFile)) {
         $cached = [];
@@ -72,6 +113,9 @@ function load_local_config(): array
     }
 
     $data = require $localConfigFile;
+    if (!is_array($data)) {
+        app_log('config', 'config/local.php ist kein Array.');
+        $cached = array();
 
     if (!is_array($data)) {
         app_log('config', 'config/local.php ist kein Array.');
@@ -83,6 +127,15 @@ function load_local_config(): array
     return $cached;
 }
 
+function local_config_string($localConfig, $key) {
+    if (!isset($localConfig[$key])) {
+        return '';
+    }
+
+    return trim((string)$localConfig[$key]);
+}
+
+function db() {
 function db()
 function app_log(string $context, string $details = ''): void
 {
@@ -105,6 +158,10 @@ function db(): mysqli
     }
 
     $local = load_local_config();
+    $dbHost = local_config_string($local, 'db_host');
+    $dbName = local_config_string($local, 'db_name');
+    $dbUser = local_config_string($local, 'db_user');
+    $dbPass = local_config_string($local, 'db_pass');
 
     $dbHost = isset($local['db_host']) ? (string)$local['db_host'] : '';
     $dbName = isset($local['db_name']) ? (string)$local['db_name'] : '';
@@ -161,6 +218,8 @@ function db(): mysqli
     return $mysqli;
 }
 
+function db_prepare($db, $sql, $context) {
+    $stmt = $db->prepare($sql);
 function db_prepare($db, $sql, $context)
 {
     $stmt = $db->prepare($sql);
