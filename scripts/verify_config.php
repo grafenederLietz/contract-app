@@ -64,6 +64,7 @@ foreach ($functionCounts as $functionName => $count) {
     }
 }
 
+$requiredFunctions = array('app_log', 'app_abort', 'load_local_config', 'db', 'db_prepare');
 $requiredFunctions = array('app_log', 'app_abort', 'load_local_config', 'local_config_string', 'db', 'db_prepare');
 foreach ($requiredFunctions as $functionName) {
     if (!isset($functionCounts[$functionName])) {

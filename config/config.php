@@ -102,6 +102,10 @@ function load_local_config(): array
         return $cached;
     }
 
+    $localConfigFile = dirname(__FILE__) . '/local.php';
+    if (!is_file($localConfigFile)) {
+        app_log('config', 'config/local.php fehlt.');
+        $cached = array();
     $localConfigFile = __DIR__ . '/local.php';
     if (!is_file($localConfigFile)) {
         app_log('config', 'config/local.php fehlt.');
@@ -127,6 +131,7 @@ function load_local_config(): array
     return $cached;
 }
 
+function db() {
 function local_config_string($localConfig, $key) {
     if (!isset($localConfig[$key])) {
         return '';
@@ -158,6 +163,33 @@ function db(): mysqli
     }
 
     $local = load_local_config();
+
+    $dbHost = '';
+    if (isset($local['db_host'])) {
+        $dbHost = trim((string)$local['db_host']);
+    }
+
+    $dbName = '';
+    if (isset($local['db_name'])) {
+        $dbName = trim((string)$local['db_name']);
+    }
+
+    $dbUser = '';
+    if (isset($local['db_user'])) {
+        $dbUser = trim((string)$local['db_user']);
+    }
+
+    $dbPass = '';
+    if (isset($local['db_pass'])) {
+        $dbPass = trim((string)$local['db_pass']);
+    }
+
+    if ($dbHost === '' || $dbName === '' || $dbUser === '' || $dbPass === '') {
+        app_log('config', 'DB-Konfiguration unvollständig: config/local.php muss db_host, db_name, db_user und db_pass enthalten.');
+        app_abort('Konfigurationsfehler.', 500);
+    }
+
+    mysqli_report(MYSQLI_REPORT_OFF);
     $dbHost = local_config_string($local, 'db_host');
     $dbName = local_config_string($local, 'db_name');
     $dbUser = local_config_string($local, 'db_user');
@@ -233,4 +265,49 @@ function db_prepare(mysqli $db, string $sql, string $context): mysqli_stmt
     }
 
     return $stmt;
+}
+
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
+$logDir = dirname(__FILE__) . '/../logs';
+if (!is_dir($logDir)) {
+    @mkdir($logDir, 0775, true);
+}
+if (is_dir($logDir) && is_writable($logDir)) {
+    ini_set('error_log', $logDir . '/php-error.log');
+}
+
+ini_set('session.use_only_cookies', '1');
+ini_set('session.use_strict_mode', '1');
+ini_set('session.cookie_httponly', '1');
+
+$isHttps = false;
+if (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') {
+    $isHttps = true;
+}
+
+session_name('CONTRACTAPPSESSID');
+session_set_cookie_params(0, '/', '', $isHttps, true);
+
+if (function_exists('session_status')) {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+} elseif (session_id() === '') {
+    session_start();
+}
+
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: same-origin');
+}
+
+if (!defined('CONTRACT_UPLOAD_BASE_PATH')) {
+    define('CONTRACT_UPLOAD_BASE_PATH', 'C:/Vertragsdaten/Uploads');
+}
+if (!defined('CONTRACT_MAX_UPLOAD_BYTES')) {
+    define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
 }
