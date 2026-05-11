@@ -1,0 +1,2 @@
+/* Kompatibilitäts-Wrapper: zentrale Styles liegen in /public/app.css */
+@import url('../app.css');
