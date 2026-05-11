@@ -7,6 +7,7 @@
 
 ## Ergebnis (Kurz)
 - **Positiv:** CSRF-Mechanik vorhanden, Prepared-Statements vielfach genutzt, zentrale Config vorhanden.
+- **Status 2026-05-11:** Direkte `die(...)`-Abbrüche in PHP-Endpunkten wurden entfernt; Upload-Prüfungen wurden in einen gemeinsamen Helper ausgelagert. Verbleibend sind weitere Härtungen wie Config-/Storage-Entkopplung und Autorisierungsreview.
 - **Status 2026-05-11:** Direkte `die(...)`-Abbrüche in PHP-Endpunkten wurden entfernt; verbleibend sind strukturelle Härtungen wie zentralisierte Upload-Prüfung und weitere Config-/Storage-Entkopplung.
 
 ## Funde (priorisiert)
@@ -19,9 +20,8 @@
    - Status: behoben; Access-Fehler laufen über `app_abort('Zugriff verweigert.', 403)`.
 
 ### Hoch
-3. **Upload-Validierung nicht zentralisiert**
-   - Upload-Regeln/Fehlerpfade verstreut in `public/contract_create.php` und `public/contract_edit.php`.
-   - Risiko: Regelabweichungen bei zukünftigen Änderungen.
+3. **Upload-Validierung zentralisieren**
+   - Status: behoben; gemeinsame Upload-Prüfungen liegen in `src/upload.php` und werden von `public/contract_create.php` sowie `public/contract_edit.php` genutzt.
 
 4. **Datei-Download Fehlerpfade**
    - Status: behoben; `public/file_download.php` nutzt einheitlich `app_abort(...)`, prüft Lesbarkeit und sendet konsistente Download-Header.
@@ -38,6 +38,7 @@
 1. [x] Alle `die('SQL Fehler ...')` ersetzen durch `app_log(...)` + `app_abort('Datenbank-Fehler.', 500)`.
 2. [x] Alle `die('Zugriff verweigert.')` ersetzen durch `app_abort('Zugriff verweigert.', 403)`.
 3. [x] Download-Fehlerpfade auf `app_abort(...)` vereinheitlichen.
+4. [x] Upload-Prüfungen in gemeinsame Helper-Funktion auslagern.
 4. [ ] Upload-Prüfungen in gemeinsame Helper-Funktion auslagern.
 
 ## Ergebnisziel Phase 1

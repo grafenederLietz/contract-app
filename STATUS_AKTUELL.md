@@ -17,6 +17,7 @@
 - Zentrale Konfiguration in `config/config.php`.
 - Einheitliches Styling über `public/app.css`.
 - Upload-/Download-Handling gehärtet.
+- Upload-Validierung für Vertragsanlage und Vertragsbearbeitung in `src/upload.php` zentralisiert.
 
 ## Nächste sinnvolle Schritte (ohne neue Features)
 1. **Release-Baseline markieren**

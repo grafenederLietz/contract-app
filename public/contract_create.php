@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/auth.php';
 require_once __DIR__ . '/../src/csrf.php';
 require_once __DIR__ . '/../src/contract_access.php';
+require_once __DIR__ . '/../src/upload.php';
 
 require_login();
 
@@ -133,6 +134,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmtDept->close();
 
+            $contractFolder = contract_upload_folder($contractId, $supplier);
+            contract_upload_ensure_folder($contractFolder);
+
+            $upload = contract_upload_validate_file(
+                (int)$_FILES['contract_file']['error'],
+                (string)$_FILES['contract_file']['tmp_name'],
+                (string)$_FILES['contract_file']['name'],
+                (int)$_FILES['contract_file']['size'],
+                ['pdf', 'doc', 'docx'],
+                'PDF, DOC, DOCX',
+                'contract_create_upload'
+            );
             $uploadBasePath = CONTRACT_UPLOAD_BASE_PATH;
             $safeSupplier = preg_replace('/[^A-Za-z0-9_-]/', '_', $supplier) ?: 'vertrag';
             $contractFolder = $uploadBasePath . '/' . $contractId . '_' . $safeSupplier;
@@ -178,13 +191,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Upload mime invalid: ' . $mime);
             }
 
-            $timestamp = date('Ymd_His');
-            $targetFileName = $safeSupplier . '_' . $timestamp . '.' . $ext;
+            $targetFileName = contract_upload_target_file_name($supplier, (string)$upload['extension']);
             $targetPath = $contractFolder . '/' . $targetFileName;
-
-            if (!move_uploaded_file($tmpName, $targetPath)) {
-                throw new RuntimeException('Upload move failed');
-            }
+            contract_upload_move_file((string)$upload['tmp_name'], $targetPath);
 
             $stmtFile = db_prepare($db, "
                 INSERT INTO contract_files (contract_id, file_name, file_path)
@@ -197,6 +206,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $db->commit();
             $success = 'Vertrag inklusive Dokument wurde gespeichert.';
+        } catch (UploadValidationException $e) {
+            $db->rollback();
+            if ($targetPath !== '' && is_file($targetPath)) {
+                @unlink($targetPath);
+            }
+            app_log('contract_create_upload_validation', $e->getMessage());
+            $error = $e->getMessage();
         } catch (Throwable $e) {
             $db->rollback();
             if ($targetPath !== '' && is_file($targetPath)) {

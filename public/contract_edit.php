@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/auth.php';
 require_once __DIR__ . '/../src/csrf.php';
 require_once __DIR__ . '/../src/contract_access.php';
+require_once __DIR__ . '/../src/upload.php';
 
 require_login();
 
@@ -226,6 +227,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (isset($_FILES['pdf_files']) && is_array($_FILES['pdf_files']['name'])) {
+                $contractFolder = contract_upload_folder($id, $supplier);
+                try {
+                    contract_upload_ensure_folder($contractFolder);
+                } catch (RuntimeException $e) {
+                    app_abort('Upload-Ordner konnte nicht erstellt werden.', 500);
                 $safeSupplier = preg_replace('/[^A-Za-z0-9_-]/', '_', $supplier);
                 $contractFolder = $uploadBasePath . '/' . $id . '_' . $safeSupplier;
 
@@ -239,6 +245,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fileCount = count($_FILES['pdf_files']['name']);
 
                 for ($i = 0; $i < $fileCount; $i++) {
+                    if ((int)$_FILES['pdf_files']['error'][$i] === UPLOAD_ERR_NO_FILE) {
+                        continue;
+                    }
+
+                    try {
+                        $upload = contract_upload_validate_file(
+                            (int)$_FILES['pdf_files']['error'][$i],
+                            (string)$_FILES['pdf_files']['tmp_name'][$i],
+                            (string)$_FILES['pdf_files']['name'][$i],
+                            (int)$_FILES['pdf_files']['size'][$i],
+                            ['pdf'],
+                            'PDF-Dateien',
+                            'contract_edit_upload'
+                        );
+
+                        $targetFileName = contract_upload_target_file_name($supplier, (string)$upload['extension'], $i);
+                        $targetPath = $contractFolder . '/' . $targetFileName;
+                        contract_upload_move_file((string)$upload['tmp_name'], $targetPath);
+                    } catch (UploadValidationException $e) {
+                        $error = $e->getMessage();
                     $fileError = (int)$_FILES['pdf_files']['error'][$i];
                     $tmpName = (string)$_FILES['pdf_files']['tmp_name'][$i];
                     $originalName = (string)$_FILES['pdf_files']['name'][$i];
@@ -278,19 +304,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } elseif (!in_array($mimeType, $allowedPdfMimeTypes, true)) {
                         $error = 'Ungültiger Dateityp erkannt.';
                         continue;
-                    }
-
-                    $timestamp = date('Ymd_His');
-                    $targetFileName = $safeSupplier . '_' . $timestamp . '_' . $i . '.pdf';
-                    $targetPath = $contractFolder . '/' . $targetFileName;
-
-                    if (!move_uploaded_file($tmpName, $targetPath)) {
+                    } catch (RuntimeException $e) {
+                        app_log('contract_edit_upload_move', $e->getMessage());
                         $error = 'Datei konnte nicht gespeichert werden.';
-                        continue;
-                    }
-
-                    if (!file_exists($targetPath)) {
-                        $error = 'Datei wurde nicht korrekt gespeichert.';
                         continue;
                     }
 
