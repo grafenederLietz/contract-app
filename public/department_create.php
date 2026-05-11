@@ -11,10 +11,6 @@ $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
-<<<<<<< codex/review-contract-app-repository
-=======
-    die('Zugriff verweigert.');
->>>>>>> main
 }
 
 $db = db();
@@ -49,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$stmt) {
                 app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                app_abort('Datenbank-Fehler.', 500);
             }
 
             $stmt->bind_param('s', $name);
@@ -102,7 +98,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </body>
 </html>
-<<<<<<< codex/review-contract-app-repository
-=======
-</html>
->>>>>>> main

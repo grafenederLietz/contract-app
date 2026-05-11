@@ -11,10 +11,6 @@ $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
-<<<<<<< codex/review-contract-app-repository
-=======
-    die('Zugriff verweigert.');
->>>>>>> main
 }
 
 $db = db();
@@ -23,10 +19,6 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id <= 0) {
     app_abort('Ungültige Benutzer-ID.', 400);
-<<<<<<< codex/review-contract-app-repository
-=======
-    die('Ungültige Benutzer-ID.');
->>>>>>> main
 }
 
 $error = '';
@@ -41,7 +33,7 @@ $stmt = $db->prepare("
 
 if (!$stmt) {
     app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+    app_abort('Datenbank-Fehler.', 500);
 }
 
 $stmt->bind_param('i', $id);
@@ -52,10 +44,6 @@ $stmt->close();
 
 if (!$editUser) {
     app_abort('Benutzer nicht gefunden.', 404);
-<<<<<<< codex/review-contract-app-repository
-=======
-    die('Benutzer nicht gefunden.');
->>>>>>> main
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -102,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (!$updateStmt) {
                     app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $updateStmt->bind_param(
@@ -124,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (!$updateStmt) {
                     app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $updateStmt->bind_param(
@@ -144,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $deleteDepartmentsStmt = $db->prepare("DELETE FROM user_departments WHERE user_id = ?");
                 if (!$deleteDepartmentsStmt) {
                     app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $deleteDepartmentsStmt->bind_param('i', $id);
@@ -159,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if (!$insertDepartmentStmt) {
                         app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                        app_abort('Datenbank-Fehler.', 500);
                     }
 
                     foreach ($department_ids as $departmentId) {
@@ -177,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $deleteLocationsStmt = $db->prepare("DELETE FROM user_locations WHERE user_id = ?");
                 if (!$deleteLocationsStmt) {
                     app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                    app_abort('Datenbank-Fehler.', 500);
                 }
 
                 $deleteLocationsStmt->bind_param('i', $id);
@@ -192,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if (!$insertLocationStmt) {
                         app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                        app_abort('Datenbank-Fehler.', 500);
                     }
 
                     foreach ($location_ids as $locationId) {
@@ -239,7 +227,7 @@ $selectedDepartmentsStmt = $db->prepare("
 
 if (!$selectedDepartmentsStmt) {
     app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+    app_abort('Datenbank-Fehler.', 500);
 }
 
 $selectedDepartmentsStmt->bind_param('i', $id);
@@ -262,7 +250,7 @@ $selectedLocationsStmt = $db->prepare("
 
 if (!$selectedLocationsStmt) {
     app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+    app_abort('Datenbank-Fehler.', 500);
 }
 
 $selectedLocationsStmt->bind_param('i', $id);
@@ -284,10 +272,6 @@ $departments = $db->query("
 if (!$departments) {
     app_log('user_edit_load_departments', $db->error);
     app_abort('Datenbank-Fehler.', 500);
-<<<<<<< codex/review-contract-app-repository
-=======
-    die('Fehler beim Laden der Abteilungen: ' . $db->error);
->>>>>>> main
 }
 
 $locations = $db->query("
@@ -299,10 +283,6 @@ $locations = $db->query("
 if (!$locations) {
     app_log('user_edit_load_locations', $db->error);
     app_abort('Datenbank-Fehler.', 500);
-<<<<<<< codex/review-contract-app-repository
-=======
-    die('Fehler beim Laden der Standorte: ' . $db->error);
->>>>>>> main
 }
 ?>
 <!DOCTYPE html>
