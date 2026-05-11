@@ -111,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $contractId = (int)$stmt->insert_id;
             $stmt->close();
 
+<<<<<<< codex/review-contract-app-repository
+=======
 
         $stmt = db_prepare($db, "
             INSERT INTO contracts
@@ -150,6 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
 
         if ($error === '') {
+>>>>>>> main
             $stmtLoc = db_prepare($db, "
                 INSERT INTO contract_locations (contract_id, location_id)
                 VALUES (?, ?)
@@ -238,6 +241,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             app_log('contract_create_txn', $e->getMessage());
             $error = 'Daten konnten nicht vollständig gespeichert werden. Es wurde nichts übernommen.';
+<<<<<<< codex/review-contract-app-repository
+=======
                 $error = 'Upload-Ordner konnte nicht erstellt werden.';
             }
 
@@ -279,6 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($error === '') {
             $success = 'Vertrag inklusive Dokument wurde gespeichert.';
+>>>>>>> main
         }
     }
 }

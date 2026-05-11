@@ -1,5 +1,7 @@
 <?php
 
+<<<<<<< codex/review-contract-app-repository
+=======
 declare(strict_types=1);
 
 error_reporting(E_ALL);
@@ -61,6 +63,7 @@ if (!defined('CONTRACT_MAX_UPLOAD_BYTES')) {
     define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
 }
 
+>>>>>>> main
 function app_log($context, $details = '') {
     error_log('[contract-app][' . $context . '] ' . $details);
 }
@@ -73,6 +76,8 @@ function app_abort($message = 'Interner Fehler.', $statusCode = 500) {
 }
 
 function load_local_config() {
+<<<<<<< codex/review-contract-app-repository
+=======
 header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
@@ -96,6 +101,7 @@ function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500):
 function load_local_config()
 function load_local_config(): array
 {
+>>>>>>> main
     static $cached = null;
 
     if (is_array($cached)) {
@@ -106,6 +112,8 @@ function load_local_config(): array
     if (!is_file($localConfigFile)) {
         app_log('config', 'config/local.php fehlt.');
         $cached = array();
+<<<<<<< codex/review-contract-app-repository
+=======
     $localConfigFile = __DIR__ . '/local.php';
     if (!is_file($localConfigFile)) {
         app_log('config', 'config/local.php fehlt.');
@@ -113,6 +121,7 @@ function load_local_config(): array
 
     if (!is_file($localConfigFile)) {
         $cached = [];
+>>>>>>> main
         return $cached;
     }
 
@@ -120,10 +129,13 @@ function load_local_config(): array
     if (!is_array($data)) {
         app_log('config', 'config/local.php ist kein Array.');
         $cached = array();
+<<<<<<< codex/review-contract-app-repository
+=======
 
     if (!is_array($data)) {
         app_log('config', 'config/local.php ist kein Array.');
         $cached = [];
+>>>>>>> main
         return $cached;
     }
 
@@ -132,6 +144,8 @@ function load_local_config(): array
 }
 
 function db() {
+<<<<<<< codex/review-contract-app-repository
+=======
 function local_config_string($localConfig, $key) {
     if (!isset($localConfig[$key])) {
         return '';
@@ -156,6 +170,7 @@ function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500):
 
 function db(): mysqli
 {
+>>>>>>> main
     static $mysqli = null;
 
     if ($mysqli instanceof mysqli) {
@@ -190,6 +205,8 @@ function db(): mysqli
     }
 
     mysqli_report(MYSQLI_REPORT_OFF);
+<<<<<<< codex/review-contract-app-repository
+=======
     $dbHost = local_config_string($local, 'db_host');
     $dbName = local_config_string($local, 'db_name');
     $dbUser = local_config_string($local, 'db_user');
@@ -235,6 +252,7 @@ function db(): mysqli
 
     mysqli_report(MYSQLI_REPORT_OFF);
 
+>>>>>>> main
     $mysqli = @new mysqli($dbHost, $dbUser, $dbPass, $dbName);
 
     if ($mysqli->connect_error) {
@@ -252,6 +270,8 @@ function db(): mysqli
 
 function db_prepare($db, $sql, $context) {
     $stmt = $db->prepare($sql);
+<<<<<<< codex/review-contract-app-repository
+=======
 function db_prepare($db, $sql, $context)
 {
     $stmt = $db->prepare($sql);
@@ -259,6 +279,7 @@ function db_prepare(mysqli $db, string $sql, string $context): mysqli_stmt
 {
     $stmt = $db->prepare($sql);
 
+>>>>>>> main
     if (!$stmt) {
         app_log($context, $db->error);
         app_abort('Datenbank-Fehler.', 500);

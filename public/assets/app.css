@@ -1,5 +1,7 @@
 /* Kompatibilitäts-Wrapper: zentrale Styles liegen in /public/app.css */
 @import url('../app.css');
+<<<<<<< codex/review-contract-app-repository
+=======
 :root {
   --bg: #f3f5f9;
   --card: #ffffff;
@@ -194,3 +196,4 @@ p[style*="color:green"] {
 .check-grid label {
   font-weight: 500;
 }
+>>>>>>> main

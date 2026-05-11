@@ -11,7 +11,10 @@ $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
+<<<<<<< codex/review-contract-app-repository
+=======
     die('Zugriff verweigert.');
+>>>>>>> main
 }
 
 $db = db();
@@ -20,7 +23,10 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id <= 0) {
     app_abort('Ungültige Benutzer-ID.', 400);
+<<<<<<< codex/review-contract-app-repository
+=======
     die('Ungültige Benutzer-ID.');
+>>>>>>> main
 }
 
 $error = '';
@@ -46,7 +52,10 @@ $stmt->close();
 
 if (!$editUser) {
     app_abort('Benutzer nicht gefunden.', 404);
+<<<<<<< codex/review-contract-app-repository
+=======
     die('Benutzer nicht gefunden.');
+>>>>>>> main
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -275,7 +284,10 @@ $departments = $db->query("
 if (!$departments) {
     app_log('user_edit_load_departments', $db->error);
     app_abort('Datenbank-Fehler.', 500);
+<<<<<<< codex/review-contract-app-repository
+=======
     die('Fehler beim Laden der Abteilungen: ' . $db->error);
+>>>>>>> main
 }
 
 $locations = $db->query("
@@ -287,7 +299,10 @@ $locations = $db->query("
 if (!$locations) {
     app_log('user_edit_load_locations', $db->error);
     app_abort('Datenbank-Fehler.', 500);
+<<<<<<< codex/review-contract-app-repository
+=======
     die('Fehler beim Laden der Standorte: ' . $db->error);
+>>>>>>> main
 }
 ?>
 <!DOCTYPE html>

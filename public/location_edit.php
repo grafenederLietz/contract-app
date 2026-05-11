@@ -11,7 +11,10 @@ $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
+<<<<<<< codex/review-contract-app-repository
+=======
     die('Zugriff verweigert.');
+>>>>>>> main
 }
 
 $db = db();
@@ -20,7 +23,10 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id <= 0) {
     app_abort('Ungültige Standort-ID.', 400);
+<<<<<<< codex/review-contract-app-repository
+=======
     die('Ungültige Standort-ID.');
+>>>>>>> main
 }
 
 $error = '';
@@ -46,7 +52,10 @@ $stmt->close();
 
 if (!$location) {
     app_abort('Standort nicht gefunden.', 404);
+<<<<<<< codex/review-contract-app-repository
+=======
     die('Standort nicht gefunden.');
+>>>>>>> main
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
