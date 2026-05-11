@@ -13,7 +13,6 @@ $file_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($file_id <= 0) {
     app_abort('Ungültige Datei-ID.', 400);
-    die('Ungültige Datei-ID.');
 }
 
 require_file_access($db, current_user_id(), current_user_role(), $file_id);
@@ -28,8 +27,6 @@ $stmt = $db->prepare("
 if (!$stmt) {
     app_log('file_download_prepare', $db->error);
     app_abort('Datenbank-Fehler.', 500);
-    app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
 }
 
 $stmt->bind_param('i', $file_id);
@@ -40,12 +37,11 @@ $stmt->close();
 
 if (!$file) {
     app_abort('Datei nicht gefunden.', 404);
-    die('Datei nicht gefunden.');
 }
 
 $filePath = (string)$file['file_path'];
 
-if (!file_exists($filePath)) {
+if (!is_file($filePath) || !is_readable($filePath)) {
     app_log('file_download_missing', $filePath);
     app_abort('Datei nicht gefunden.', 404);
 }
@@ -64,14 +60,7 @@ if ($mime === 'application/octet-stream') {
 
 header('Content-Type: ' . $mime);
 header('Content-Disposition: attachment; filename="' . basename((string)$file['file_name']) . '"');
-    die('Datei existiert nicht auf dem Server.');
-}
-
-$mime = mime_content_type($filePath) ?: 'application/octet-stream';
-header('Content-Type: ' . $mime);
-header('Content-Disposition: inline; filename="' . basename((string)$file['file_name']) . '"');
 header('Content-Length: ' . filesize($filePath));
 
 readfile($filePath);
-exit;
 exit;
