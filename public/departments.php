@@ -10,6 +10,7 @@ $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
+    die('Zugriff verweigert.');
 }
 
 $db = db();
@@ -23,6 +24,7 @@ $result = $db->query("
 if (!$result) {
     app_log('departments_list_query', $db->error);
     app_abort('Datenbank-Fehler.', 500);
+    die('SQL Fehler: ' . $db->error);
 }
 ?>
 <!DOCTYPE html>
@@ -60,4 +62,5 @@ if (!$result) {
 </table>
 
 </body>
+</html>
 </html>

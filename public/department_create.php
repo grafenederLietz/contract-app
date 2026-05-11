@@ -11,6 +11,10 @@ $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
+<<<<<<< codex/review-contract-app-repository
+=======
+    die('Zugriff verweigert.');
+>>>>>>> main
 }
 
 $db = db();
@@ -98,3 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </body>
 </html>
+<<<<<<< codex/review-contract-app-repository
+=======
+</html>
+>>>>>>> main

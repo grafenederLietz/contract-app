@@ -10,6 +10,10 @@ $user = current_user();
 
 if (($user['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
+<<<<<<< codex/review-contract-app-repository
+=======
+    die('Zugriff verweigert.');
+>>>>>>> main
 }
 
 $db = db();
@@ -31,6 +35,10 @@ $result = $db->query("
 if (!$result) {
     app_log('users_list_query', $db->error);
     app_abort('Datenbank-Fehler.', 500);
+<<<<<<< codex/review-contract-app-repository
+=======
+    die('SQL Fehler: ' . $db->error);
+>>>>>>> main
 }
 ?>
 <!DOCTYPE html>
@@ -81,3 +89,7 @@ if (!$result) {
 
 </body>
 </html>
+<<<<<<< codex/review-contract-app-repository
+=======
+</html>
+>>>>>>> main
