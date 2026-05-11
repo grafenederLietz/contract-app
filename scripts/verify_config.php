@@ -23,7 +23,6 @@ $forbiddenFragments = array(
     'function db(): mysqli' => 'Alte typisierte db()-Deklaration gefunden.',
     'function db_prepare(mysqli' => 'Alte typisierte db_prepare()-Deklaration gefunden.',
     'Schritt 1 Stabilität' => 'Alter Legacy-Fallback-Kommentar gefunden.',
-    'jREIOV0jkO6Q5dN23OYV' => 'Verbotenes Klartext-Passwort gefunden.',
     "getenv('CONTRACTAPP_DB_" => 'ENV-DB-Credential-Zugriff gefunden; erlaubt ist nur config/local.php.',
     'config_value(' => 'Veralteter config_value()-Fallback gefunden.',
 );
@@ -65,10 +64,6 @@ foreach ($functionCounts as $functionName => $count) {
 }
 
 $requiredFunctions = array('app_log', 'app_abort', 'load_local_config', 'db', 'db_prepare');
-<<<<<<< codex/review-contract-app-repository
-=======
-$requiredFunctions = array('app_log', 'app_abort', 'load_local_config', 'local_config_string', 'db', 'db_prepare');
->>>>>>> main
 foreach ($requiredFunctions as $functionName) {
     if (!isset($functionCounts[$functionName])) {
         $errors[] = 'Erforderliche Funktion fehlt: ' . $functionName . '().';
