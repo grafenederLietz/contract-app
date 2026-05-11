@@ -152,6 +152,15 @@ C:\PHP\php.exe -l C:\WebApps\contract-app\config\config.php
 C:\PHP\php.exe C:\WebApps\contract-app\scripts\verify_config.php
 ```
 
+<<<<<<< codex/weiterarbeiten-an-contract-app-projekt-n5dn8u
+Optionaler gebündelter Nach-Pull-Check inkl. `contract_edit.php`, Upload-Helper und Upload-Pfad-ACL:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\WebApps\contract-app\scripts\server_post_pull_check.ps1 -AppRoot C:\WebApps\contract-app -PhpExe C:\PHP\php.exe
+```
+
+=======
+>>>>>>> main
 8. IIS neu starten:
 
 ```powershell
@@ -187,6 +196,18 @@ Wenn der Serverstand kaputt ist:
 powershell -ExecutionPolicy Bypass -File C:\WebApps\contract-app\scripts\repair_server_checkout.ps1 -AppRoot C:\WebApps\contract-app -Branch main -Force -PhpExe C:\PHP\php.exe
 ```
 
+<<<<<<< codex/weiterarbeiten-an-contract-app-projekt-n5dn8u
+Wenn der direkte Explorer-Zugriff auf `C:\Vertragsdaten\Uploads` für Administratoren mit `Access denied` fehlschlägt, zuerst die ACL nur anzeigen und danach bei Bedarf als Administrator reparieren:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\WebApps\contract-app\scripts\repair_upload_acl.ps1
+powershell -ExecutionPolicy Bypass -File C:\WebApps\contract-app\scripts\repair_upload_acl.ps1 -Apply
+```
+
+Hinweis: Fachliche Downloads sollen weiterhin über die App und `file_download.php` erfolgen, nicht über direkte Dateisystempfade.
+
+=======
+>>>>>>> main
 ## 9. Aktuelle offene technische To-dos
 
 ### Phase 1: Codebasis stabilisieren
