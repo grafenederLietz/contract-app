@@ -156,3 +156,16 @@ Wenn der Smoke-Test grün ist, ist der nächste technische PR empfohlen:
 3. Danach Rechte-/Autorisierungsreview für Verträge und Downloads fortsetzen.
 
 Damit wird direkt an die offene Security-Review-Maßnahme `Upload-Prüfungen in gemeinsame Helper-Funktion auslagern` angeschlossen.
+
+## 8. Ergebnis aktueller Smoke-Test
+
+Status am 2026-05-11: **erfolgreich abgeschlossen**.
+
+- Server-`main` war laut Rückmeldung sauber mit `origin/main` synchronisiert.
+- `config/config.php` hatte keine Syntaxfehler.
+- `scripts/verify_config.php` meldete `OK: config/config.php ist sauber.`
+- IIS wurde erfolgreich neu gestartet.
+- Alle Browser-Smoke-Testpunkte wurden erfolgreich geprüft.
+- Der zwischenzeitliche Upload-Blocker bei der Vertragsanlage (`Upload mime invalid:` mit leerem MIME-Wert) wurde behoben und der Vertrag konnte anschließend erfolgreich gespeichert werden.
+
+Nächster empfohlener Arbeitsschritt: Upload-Validierung in einen gemeinsamen Helper auslagern und die Regeln zwischen Vertragsanlage und Vertragsbearbeitung vereinheitlichen.
