@@ -31,7 +31,6 @@ Set-Location $AppRoot
 
 Write-Section "Git-Stand"
 Show-CommandResult "git rev-parse --show-toplevel"
-<<<<<<< codex/review-contract-app-repository
 $gitStatus = git status --short
 if ($gitStatus) {
     Write-Host "FEHLER: Arbeitskopie ist nicht sauber. Diese Dateien weichen vom Git-Stand ab:"
@@ -39,8 +38,6 @@ if ($gitStatus) {
 } else {
     Write-Host "OK: Arbeitskopie ist sauber."
 }
-=======
->>>>>>> main
 Show-CommandResult "git status --short"
 Show-CommandResult "git log -1 --oneline"
 
@@ -57,15 +54,11 @@ Write-Section "Config-Dateien"
 $configPath = Join-Path $AppRoot "config\config.php"
 $localPath = Join-Path $AppRoot "config\local.php"
 Write-Host "config.php vorhanden: $(Test-Path $configPath)"
-<<<<<<< codex/review-contract-app-repository
 $localExists = Test-Path $localPath
 Write-Host "local.php vorhanden:  $localExists"
 if (-not $localExists) {
     Write-Host "FEHLER: config/local.php fehlt. Ohne diese lokale Datei kann die App keine DB-Verbindung aufbauen."
 }
-=======
-Write-Host "local.php vorhanden:  $(Test-Path $localPath)"
->>>>>>> main
 
 if (Test-Path $configPath) {
     Get-Item $configPath | Select-Object FullName, Length, LastWriteTime | Format-List
@@ -119,7 +112,4 @@ foreach ($pattern in $patterns) {
 Write-Section "Naechste Schritte"
 Write-Host "Wenn php -l hier OK ist, aber IIS weiter Parse Errors zeigt, nutzt IIS sehr wahrscheinlich einen anderen PHP-Interpreter, eine andere Datei oder einen Cache/Opcode-Cache."
 Write-Host "Dann bitte die Ausgabe dieses Skripts bereitstellen und zusaetzlich den IIS FastCGI/Handler-Mapping PHP-Pfad pruefen."
-<<<<<<< codex/review-contract-app-repository
 Write-Host "Wenn git status geaenderte config/scripts zeigt, kann scripts\repair_server_checkout.ps1 den Checkout hart auf origin/main zuruecksetzen."
-=======
->>>>>>> main

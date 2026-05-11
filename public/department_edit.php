@@ -11,7 +11,6 @@ $currentUser = current_user();
 
 if (($currentUser['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
-    die('Zugriff verweigert.');
 }
 
 $db = db();
@@ -20,7 +19,6 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id <= 0) {
     app_abort('Ungültige Abteilungs-ID.', 400);
-    die('Ungültige Abteilungs-ID.');
 }
 
 $error = '';
@@ -35,7 +33,7 @@ $stmt = $db->prepare("
 
 if (!$stmt) {
     app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+    app_abort('Datenbank-Fehler.', 500);
 }
 
 $stmt->bind_param('i', $id);
@@ -46,7 +44,6 @@ $stmt->close();
 
 if (!$department) {
     app_abort('Abteilung nicht gefunden.', 404);
-    die('Abteilung nicht gefunden.');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -85,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$updateStmt) {
                 app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                app_abort('Datenbank-Fehler.', 500);
             }
 
             $updateStmt->bind_param('si', $name, $id);
