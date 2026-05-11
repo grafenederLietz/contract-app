@@ -1,69 +1,7 @@
 <?php
 
-<<<<<<< codex/review-contract-app-repository
-=======
-declare(strict_types=1);
+// Clean bootstrap generated for contract-app. Do not paste merge-conflict content into this file.
 
-error_reporting(E_ALL);
-ini_set('display_errors', '0');
-ini_set('log_errors', '1');
-
-$logDir = __DIR__ . '/../logs';
-if (!is_dir($logDir)) {
-    @mkdir($logDir, 0775, true);
-}
-if (is_dir($logDir) && is_writable($logDir)) {
-    ini_set('error_log', $logDir . '/php-error.log');
-}
-
-ini_set('session.use_only_cookies', '1');
-ini_set('session.use_strict_mode', '1');
-ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_samesite', 'Lax');
-
-$isHttps = !empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off';
-
-session_name('CONTRACTAPPSESSID');
-if (defined('PHP_VERSION_ID') && PHP_VERSION_ID >= 70300) {
-    ini_set('session.cookie_samesite', 'Lax');
-    session_set_cookie_params(array(
-        'lifetime' => 0,
-        'path' => '/',
-        'domain' => '',
-        'secure' => $isHttps,
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ));
-} else {
-    session_set_cookie_params(0, '/', '', $isHttps, true);
-}
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '',
-    'secure' => $isHttps,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
-
-if (!headers_sent()) {
-    header('X-Frame-Options: SAMEORIGIN');
-    header('X-Content-Type-Options: nosniff');
-    header('Referrer-Policy: same-origin');
-}
-
-if (!defined('CONTRACT_UPLOAD_BASE_PATH')) {
-    define('CONTRACT_UPLOAD_BASE_PATH', 'C:/Vertragsdaten/Uploads');
-}
-if (!defined('CONTRACT_MAX_UPLOAD_BYTES')) {
-    define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
-}
-
->>>>>>> main
 function app_log($context, $details = '') {
     error_log('[contract-app][' . $context . '] ' . $details);
 }
@@ -76,32 +14,6 @@ function app_abort($message = 'Interner Fehler.', $statusCode = 500) {
 }
 
 function load_local_config() {
-<<<<<<< codex/review-contract-app-repository
-=======
-header('X-Frame-Options: SAMEORIGIN');
-header('X-Content-Type-Options: nosniff');
-header('Referrer-Policy: same-origin');
-
-define('CONTRACT_UPLOAD_BASE_PATH', 'C:/Vertragsdaten/Uploads');
-define('CONTRACT_MAX_UPLOAD_BYTES', 20 * 1024 * 1024);
-
-function app_log($context, $details = '')
-function app_log(string $context, string $details = ''): void
-{
-    error_log('[contract-app][' . $context . '] ' . $details);
-}
-
-function app_abort($message = 'Interner Fehler.', $statusCode = 500)
-function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): void
-{
-    http_response_code($statusCode);
-    exit($message);
-}
-
-function load_local_config()
-function load_local_config(): array
-{
->>>>>>> main
     static $cached = null;
 
     if (is_array($cached)) {
@@ -112,16 +24,6 @@ function load_local_config(): array
     if (!is_file($localConfigFile)) {
         app_log('config', 'config/local.php fehlt.');
         $cached = array();
-<<<<<<< codex/review-contract-app-repository
-=======
-    $localConfigFile = __DIR__ . '/local.php';
-    if (!is_file($localConfigFile)) {
-        app_log('config', 'config/local.php fehlt.');
-        $cached = array();
-
-    if (!is_file($localConfigFile)) {
-        $cached = [];
->>>>>>> main
         return $cached;
     }
 
@@ -129,13 +31,6 @@ function load_local_config(): array
     if (!is_array($data)) {
         app_log('config', 'config/local.php ist kein Array.');
         $cached = array();
-<<<<<<< codex/review-contract-app-repository
-=======
-
-    if (!is_array($data)) {
-        app_log('config', 'config/local.php ist kein Array.');
-        $cached = [];
->>>>>>> main
         return $cached;
     }
 
@@ -144,33 +39,6 @@ function load_local_config(): array
 }
 
 function db() {
-<<<<<<< codex/review-contract-app-repository
-=======
-function local_config_string($localConfig, $key) {
-    if (!isset($localConfig[$key])) {
-        return '';
-    }
-
-    return trim((string)$localConfig[$key]);
-}
-
-function db() {
-function db()
-function app_log(string $context, string $details = ''): void
-{
-    error_log('[contract-app][' . $context . '] ' . $details);
-}
-
-function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): void
-function app_abort(string $message = 'Interner Fehler.', int $statusCode = 500): never
-{
-    http_response_code($statusCode);
-    exit($message);
-}
-
-function db(): mysqli
-{
->>>>>>> main
     static $mysqli = null;
 
     if ($mysqli instanceof mysqli) {
@@ -205,54 +73,6 @@ function db(): mysqli
     }
 
     mysqli_report(MYSQLI_REPORT_OFF);
-<<<<<<< codex/review-contract-app-repository
-=======
-    $dbHost = local_config_string($local, 'db_host');
-    $dbName = local_config_string($local, 'db_name');
-    $dbUser = local_config_string($local, 'db_user');
-    $dbPass = local_config_string($local, 'db_pass');
-
-    $dbHost = isset($local['db_host']) ? (string)$local['db_host'] : '';
-    $dbName = isset($local['db_name']) ? (string)$local['db_name'] : '';
-    $dbUser = isset($local['db_user']) ? (string)$local['db_user'] : '';
-    $dbPass = isset($local['db_pass']) ? (string)$local['db_pass'] : '';
-
-    if ($dbHost === '' || $dbName === '' || $dbUser === '' || $dbPass === '') {
-        app_log('config', 'DB-Konfiguration unvollständig: config/local.php muss db_host, db_name, db_user und db_pass enthalten.');
-        app_abort('Konfigurationsfehler.', 500);
-    }
-
-    mysqli_report(MYSQLI_REPORT_OFF);
-    $dbHost = getenv('CONTRACTAPP_DB_HOST')
-        ?: (isset($local['db_host']) ? (string)$local['db_host'] : '127.0.0.1');
-    $dbName = getenv('CONTRACTAPP_DB_NAME')
-        ?: (isset($local['db_name']) ? (string)$local['db_name'] : 'contractdb');
-    $dbUser = getenv('CONTRACTAPP_DB_USER')
-        ?: (isset($local['db_user']) ? (string)$local['db_user'] : 'contractapp_user');
-
-    $dbPass = getenv('CONTRACTAPP_DB_PASS');
-    if ((!is_string($dbPass) || $dbPass === '') && isset($local['db_pass'])) {
-        $dbPass = (string)$local['db_pass'];
-    }
-
-    if (!is_string($dbPass) || $dbPass === '') {
-        app_log('config', 'CONTRACTAPP_DB_PASS fehlt (und kein config/local.php db_pass gesetzt).');
-        app_abort('Konfigurationsfehler.', 500);
-    $dbHost = getenv('CONTRACTAPP_DB_HOST') ?: '127.0.0.1';
-    $dbName = getenv('CONTRACTAPP_DB_NAME') ?: 'contractdb';
-    $dbUser = getenv('CONTRACTAPP_DB_USER') ?: 'contractapp_user';
-
-    // Schritt 1 Stabilität: ENV bevorzugen, sonst Legacy-Fallback nutzen.
-    $dbPass = getenv('CONTRACTAPP_DB_PASS');
-    if (!is_string($dbPass) || $dbPass === '') {
-        app_log('config', 'CONTRACTAPP_DB_PASS fehlt.');
-        app_abort('Konfigurationsfehler.', 500);
-        $dbPass = 'jREIOV0jkO6Q5dN23OYV';
-    }
-
-    mysqli_report(MYSQLI_REPORT_OFF);
-
->>>>>>> main
     $mysqli = @new mysqli($dbHost, $dbUser, $dbPass, $dbName);
 
     if ($mysqli->connect_error) {
@@ -270,16 +90,6 @@ function db(): mysqli
 
 function db_prepare($db, $sql, $context) {
     $stmt = $db->prepare($sql);
-<<<<<<< codex/review-contract-app-repository
-=======
-function db_prepare($db, $sql, $context)
-{
-    $stmt = $db->prepare($sql);
-function db_prepare(mysqli $db, string $sql, string $context): mysqli_stmt
-{
-    $stmt = $db->prepare($sql);
-
->>>>>>> main
     if (!$stmt) {
         app_log($context, $db->error);
         app_abort('Datenbank-Fehler.', 500);
