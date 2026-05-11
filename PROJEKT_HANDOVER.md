@@ -153,6 +153,7 @@ C:\PHP\php.exe C:\WebApps\contract-app\scripts\verify_config.php
 ```
 
 Optionaler gebündelter Nach-Pull-Check inkl. Konfliktmarker-Suche, `contract_edit.php`, Upload-Helper und Upload-Pfad-ACL:
+Optionaler gebündelter Nach-Pull-Check inkl. `contract_edit.php`, Upload-Helper und Upload-Pfad-ACL:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File C:\WebApps\contract-app\scripts\server_post_pull_check.ps1 -AppRoot C:\WebApps\contract-app -PhpExe C:\PHP\php.exe
