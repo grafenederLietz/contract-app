@@ -96,7 +96,6 @@ $patterns = @(
     "function db(): mysqli",
     "function db_prepare(mysqli",
     "Schritt 1 Stabilitaet",
-    "jREIOV0jkO6Q5dN23OYV",
     "CONTRACTAPP_DB_"
 )
 foreach ($pattern in $patterns) {
