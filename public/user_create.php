@@ -11,7 +11,6 @@ $user = current_user();
 
 if (($user['role'] ?? '') !== 'admin') {
     app_abort('Zugriff verweigert.', 403);
-    die('Zugriff verweigert.');
 }
 
 $db = db();
@@ -60,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$stmt) {
                 app_log('db-prepare', $db->error);
-            app_abort('Datenbank-Fehler.', 500);
+                app_abort('Datenbank-Fehler.', 500);
             }
 
             $stmt->bind_param(
