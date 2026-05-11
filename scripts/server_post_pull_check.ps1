@@ -36,6 +36,9 @@ Write-Section "Git-Stand"
 Run-Cmd "git status --short --branch"
 Run-Cmd "git log -1 --oneline"
 
+Write-Section "Konfliktmarker"
+Run-Cmd "powershell -ExecutionPolicy Bypass -File scripts\check_conflict_markers.ps1 -AppRoot `"$AppRoot`""
+
 Write-Section "PHP Syntax Kern-Dateien"
 $phpFiles = @(
     "config\config.php",

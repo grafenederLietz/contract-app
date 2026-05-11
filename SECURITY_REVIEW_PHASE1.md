@@ -8,10 +8,8 @@
 ## Ergebnis (Kurz)
 - **Positiv:** CSRF-Mechanik vorhanden, Prepared-Statements vielfach genutzt, zentrale Config vorhanden.
 - **Status 2026-05-11:** Direkte `die(...)`-Abbrüche in PHP-Endpunkten wurden entfernt; Upload-Prüfungen wurden in einen gemeinsamen Helper ausgelagert. Verbleibend sind weitere Härtungen wie Config-/Storage-Entkopplung und Autorisierungsreview.
-<<<<<<< codex/weiterarbeiten-an-contract-app-projekt-n5dn8u
-=======
 - **Status 2026-05-11:** Direkte `die(...)`-Abbrüche in PHP-Endpunkten wurden entfernt; verbleibend sind strukturelle Härtungen wie zentralisierte Upload-Prüfung und weitere Config-/Storage-Entkopplung.
->>>>>>> main
+
 
 ## Funde (priorisiert)
 
@@ -42,10 +40,8 @@
 2. [x] Alle `die('Zugriff verweigert.')` ersetzen durch `app_abort('Zugriff verweigert.', 403)`.
 3. [x] Download-Fehlerpfade auf `app_abort(...)` vereinheitlichen.
 4. [x] Upload-Prüfungen in gemeinsame Helper-Funktion auslagern.
-<<<<<<< codex/weiterarbeiten-an-contract-app-projekt-n5dn8u
-=======
 4. [ ] Upload-Prüfungen in gemeinsame Helper-Funktion auslagern.
->>>>>>> main
+
 
 ## Ergebnisziel Phase 1
 - Kein direkter SQL-/Systemfehler für Endnutzer sichtbar.
