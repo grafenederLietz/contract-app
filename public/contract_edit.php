@@ -253,8 +253,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         continue;
                     }
 
-                    if ($fileSize > 20 * 1024 * 1024) {
-                        $error = 'Eine Datei ist größer als 20 MB.';
+                    if ($fileSize <= 0 || $fileSize > CONTRACT_MAX_UPLOAD_BYTES) {
+                        $error = 'Eine Datei fehlt oder ist größer als 20 MB.';
                         continue;
                     }
 
@@ -265,10 +265,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                    $mimeType = finfo_file($finfo, $tmpName);
-                    finfo_close($finfo);
-
-                    if ($mimeType !== 'application/pdf') {
+                    $mimeType = is_resource($finfo) ? (string)finfo_file($finfo, $tmpName) : '';
+                    if (is_resource($finfo)) {
+                        finfo_close($finfo);
+                    }
+                    if ($mimeType === '' && function_exists('mime_content_type')) {
+                        $mimeType = (string)(mime_content_type($tmpName) ?: '');
+                    }
+                    $allowedPdfMimeTypes = ['application/pdf', 'application/x-pdf', 'application/octet-stream'];
+                    if ($mimeType === '') {
+                        app_log('contract_edit_upload_mime_empty', 'file=' . $originalName . ';ext=' . $extension);
+                    } elseif (!in_array($mimeType, $allowedPdfMimeTypes, true)) {
                         $error = 'Ungültiger Dateityp erkannt.';
                         continue;
                     }

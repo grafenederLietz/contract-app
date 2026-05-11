@@ -160,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $allowedMimeByExt = [
-                'pdf' => ['application/pdf'],
+                'pdf' => ['application/pdf', 'application/x-pdf', 'application/octet-stream'],
                 'doc' => ['application/msword', 'application/octet-stream'],
                 'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
             ];
@@ -169,7 +169,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (is_resource($finfo)) {
                 finfo_close($finfo);
             }
-            if (!in_array($mime, $allowedMimeByExt[$ext], true)) {
+            if ($mime === '' && function_exists('mime_content_type')) {
+                $mime = (string)(mime_content_type($tmpName) ?: '');
+            }
+            if ($mime === '') {
+                app_log('contract_create_upload_mime_empty', 'file=' . $originalName . ';ext=' . $ext);
+            } elseif (!in_array($mime, $allowedMimeByExt[$ext], true)) {
                 throw new RuntimeException('Upload mime invalid: ' . $mime);
             }
 
