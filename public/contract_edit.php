@@ -17,12 +17,11 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id <= 0) {
     app_abort('Ungültige Vertrags-ID.', 400);
-    die('Ungültige Vertrags-ID.');
 }
 
 require_contract_access($db, $userId, $userRole, $id);
 
-$uploadBasePath = 'C:/Vertragsdaten/Uploads';
+$uploadBasePath = CONTRACT_UPLOAD_BASE_PATH;
 
 $error = '';
 $success = '';
@@ -57,7 +56,6 @@ $stmt->close();
 
 if (!$contract) {
     app_abort('Vertrag nicht gefunden.', 404);
-    die('Vertrag nicht gefunden.');
 }
 
 $users = get_active_users($db);
@@ -74,14 +72,12 @@ if ($userRole !== 'admin') {
     foreach ($selectedLocations as $locationId) {
         if (!in_array($locationId, $allowedLocationIds, true)) {
             app_abort('Zugriff verweigert.', 403);
-            die('Zugriff verweigert.');
         }
     }
 
     foreach ($selectedDepartments as $departmentId) {
         if (!in_array($departmentId, $allowedDepartmentIds, true)) {
             app_abort('Zugriff verweigert.', 403);
-            die('Zugriff verweigert.');
         }
     }
 }
@@ -90,7 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
     if (!can_manage_contracts()) {
         app_abort('Zugriff verweigert.', 403);
-        die('Zugriff verweigert.');
     }
 
     $supplier = trim((string)($_POST['supplier'] ?? ''));
@@ -238,7 +233,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!mkdir($contractFolder, 0775, true) && !is_dir($contractFolder)) {
                         app_log('upload_folder_create', $contractFolder);
                         app_abort('Upload-Ordner konnte nicht erstellt werden.', 500);
-                        die('Upload-Ordner konnte nicht erstellt werden.');
                     }
                 }
 
@@ -259,8 +253,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         continue;
                     }
 
-                    if ($fileSize > 20 * 1024 * 1024) {
-                        $error = 'Eine Datei ist größer als 20 MB.';
+                    if ($fileSize <= 0 || $fileSize > CONTRACT_MAX_UPLOAD_BYTES) {
+                        $error = 'Eine Datei fehlt oder ist größer als 20 MB.';
                         continue;
                     }
 
@@ -271,10 +265,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                    $mimeType = finfo_file($finfo, $tmpName);
-                    finfo_close($finfo);
-
-                    if ($mimeType !== 'application/pdf') {
+                    $mimeType = is_resource($finfo) ? (string)finfo_file($finfo, $tmpName) : '';
+                    if (is_resource($finfo)) {
+                        finfo_close($finfo);
+                    }
+                    if ($mimeType === '' && function_exists('mime_content_type')) {
+                        $mimeType = (string)(mime_content_type($tmpName) ?: '');
+                    }
+                    $allowedPdfMimeTypes = ['application/pdf', 'application/x-pdf', 'application/octet-stream'];
+                    if ($mimeType === '') {
+                        app_log('contract_edit_upload_mime_empty', 'file=' . $originalName . ';ext=' . $extension);
+                    } elseif (!in_array($mimeType, $allowedPdfMimeTypes, true)) {
                         $error = 'Ungültiger Dateityp erkannt.';
                         continue;
                     }

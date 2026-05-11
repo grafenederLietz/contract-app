@@ -111,48 +111,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $contractId = (int)$stmt->insert_id;
             $stmt->close();
 
-<<<<<<< codex/review-contract-app-repository
-=======
-
-        $stmt = db_prepare($db, "
-            INSERT INTO contracts
-            (
-                supplier,
-                contract_subject,
-                contract_start,
-                duration_months,
-                contract_end,
-                termination_period_months,
-                termination_text,
-                status,
-                responsible_user_id
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ", 'contract_create_insert_contract');
-
-        $stmt->bind_param(
-            'sssissssi',
-            $supplier,
-            $contract_subject,
-            $contract_start,
-            $duration_months,
-            $contract_end,
-            $termination_period_months,
-            $termination_text,
-            $status,
-            $responsible_user_id
-        );
-
-        if (!$stmt->execute()) {
-            app_log('contract_create_insert_contract_execute', $stmt->error);
-            $error = 'Daten konnten nicht gespeichert werden.';
-        }
-
-        $contractId = (int)$stmt->insert_id;
-        $stmt->close();
-
-        if ($error === '') {
->>>>>>> main
             $stmtLoc = db_prepare($db, "
                 INSERT INTO contract_locations (contract_id, location_id)
                 VALUES (?, ?)
@@ -202,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $allowedMimeByExt = [
-                'pdf' => ['application/pdf'],
+                'pdf' => ['application/pdf', 'application/x-pdf', 'application/octet-stream'],
                 'doc' => ['application/msword', 'application/octet-stream'],
                 'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
             ];
@@ -211,7 +169,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (is_resource($finfo)) {
                 finfo_close($finfo);
             }
-            if (!in_array($mime, $allowedMimeByExt[$ext], true)) {
+            if ($mime === '' && function_exists('mime_content_type')) {
+                $mime = (string)(mime_content_type($tmpName) ?: '');
+            }
+            if ($mime === '') {
+                app_log('contract_create_upload_mime_empty', 'file=' . $originalName . ';ext=' . $ext);
+            } elseif (!in_array($mime, $allowedMimeByExt[$ext], true)) {
                 throw new RuntimeException('Upload mime invalid: ' . $mime);
             }
 
@@ -241,50 +204,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             app_log('contract_create_txn', $e->getMessage());
             $error = 'Daten konnten nicht vollständig gespeichert werden. Es wurde nichts übernommen.';
-<<<<<<< codex/review-contract-app-repository
-=======
-                $error = 'Upload-Ordner konnte nicht erstellt werden.';
-            }
-
-            if ($error === '') {
-                $fileError = (int)$_FILES['contract_file']['error'];
-                $tmpName = (string)$_FILES['contract_file']['tmp_name'];
-                $originalName = (string)$_FILES['contract_file']['name'];
-                $fileSize = (int)$_FILES['contract_file']['size'];
-
-                if ($fileError !== UPLOAD_ERR_OK) {
-                    $error = 'Fehler beim Datei-Upload.';
-                } elseif ($fileSize <= 0 || $fileSize > CONTRACT_MAX_UPLOAD_BYTES) {
-                    $error = 'Datei fehlt oder ist größer als 20 MB.';
-                } else {
-                    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-                    if (!in_array($ext, ['pdf', 'doc', 'docx'], true)) {
-                        $error = 'Erlaubt sind nur PDF, DOC, DOCX.';
-                    } else {
-                        $timestamp = date('Ymd_His');
-                        $targetFileName = $safeSupplier . '_' . $timestamp . '.' . $ext;
-                        $targetPath = $contractFolder . '/' . $targetFileName;
-
-                        if (!move_uploaded_file($tmpName, $targetPath)) {
-                            $error = 'Datei konnte nicht gespeichert werden.';
-                        } else {
-                            $stmtFile = db_prepare($db, "
-                                INSERT INTO contract_files (contract_id, file_name, file_path)
-                                VALUES (?, ?, ?)
-                            ", 'contract_create_insert_file');
-
-                            $stmtFile->bind_param('iss', $contractId, $targetFileName, $targetPath);
-                            $stmtFile->execute();
-                            $stmtFile->close();
-                        }
-                    }
-                }
-            }
-        }
-
-        if ($error === '') {
-            $success = 'Vertrag inklusive Dokument wurde gespeichert.';
->>>>>>> main
         }
     }
 }
