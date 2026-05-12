@@ -10,18 +10,20 @@
   - `vendor/`
 - `main` ist als alleiniger aktiver Hauptstand vorgesehen.
 - Kernfunktionen laufen laut Rückmeldung ohne Laufzeitfehler.
+- Smoke-Test nach Server-Sync wurde am 2026-05-11 erfolgreich abgeschlossen.
 
 ## Bereits umgesetzt
 - CSRF-Schutz in Login/Create/Edit-Flows.
 - Zentrale Konfiguration in `config/config.php`.
 - Einheitliches Styling über `public/app.css`.
 - Upload-/Download-Handling gehärtet.
+- Upload-Validierung für Vertragsanlage und Vertragsbearbeitung in `src/upload.php` zentralisiert.
 
 ## Nächste sinnvolle Schritte (ohne neue Features)
 1. **Release-Baseline markieren**
    - Git Tag setzen (z. B. `v1-internal-demo`).
-2. **Smoke-Test-Protokoll erstellen**
-   - Login, Dashboard, Verträge, Upload/Download, Benutzer/Standorte/Abteilungen.
+2. **Smoke-Test-Protokoll erstellen** ✅
+   - Login, Dashboard, Verträge, Upload/Download, Benutzer/Standorte/Abteilungen wurden erfolgreich geprüft.
 3. **Staging-Backup automatisieren**
    - DB-Dump + Upload-Ordner + Code-Export.
 4. **Interne Demo vorbereiten**
@@ -29,6 +31,6 @@
 
 ## Go/No-Go Kriterium für interne Präsentation
 - Keine PHP Errors in Kernseiten
-- Upload/Download funktioniert
+- Upload/Download funktioniert ✅
 - Rollenrechte funktionieren
 - Ampelübersicht und kritische Verträge korrekt sichtbar
