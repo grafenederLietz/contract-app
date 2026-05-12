@@ -232,10 +232,10 @@ Hinweis: Fachliche Downloads sollen weiterhin über die App und `file_download.p
 ### Phase 2: Security Review / Hardening App
 
 - Login-Rate-Limit prüfen/implementieren.
-- Passwort-Policy prüfen/implementieren.
+- Passwort-Policy fachlich finalisieren; technische Basisprüfung bei Benutzeranlage/-bearbeitung ist aktiv.
 - CSRF-Abdeckung erneut vollständig prüfen.
-- Upload-Validierung zentralisieren und weiter härten.
-- Download nur nach Berechtigungsprüfung und bevorzugt als Attachment ausliefern.
+- Upload-Validierung weiter härten; Basis-Zentralisierung in `src/upload.php` ist umgesetzt und per `scripts/sanity_check.sh` gegen alte Inline-Fragmente abgesichert.
+- Download erfolgt nach Berechtigungsprüfung als Attachment und wird zusätzlich auf den Upload-Basispfad begrenzt; weitere Download-Härtung bei Bedarf fachlich prüfen.
 - Content Security Policy evaluieren.
 - Session-/Cookie-Einstellungen für HTTPS finalisieren.
 - Directory Traversal verhindern und Webroot strikt auf `public/` begrenzen.

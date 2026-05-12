@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/auth.php';
 require_once __DIR__ . '/../src/csrf.php';
 require_once __DIR__ . '/../src/contract_access.php';
+require_once __DIR__ . '/../src/contract_dates.php';
 require_once __DIR__ . '/../src/upload.php';
 
 require_login();
@@ -63,6 +64,7 @@ $departments = get_allowed_departments($db, $userId, $userRole);
 
 $allowedLocationIds = get_allowed_ids($locations);
 $allowedDepartmentIds = get_allowed_ids($departments);
+$allowedResponsibleUserIds = get_allowed_ids($users);
 
 $selectedLocations = get_contract_location_ids($db, $id);
 $selectedDepartments = get_contract_department_ids($db, $id);
@@ -117,14 +119,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $termination_period_months < 0 ||
         $termination_text === '' ||
         $responsible_user_id <= 0 ||
+        !in_array($responsible_user_id, $allowedResponsibleUserIds, true) ||
         $validatedLocationIds === [] ||
         $validatedDepartmentIds === []
     ) {
         $error = 'Alle Felder sind Pflichtfelder. Bitte alles ausfüllen und mindestens einen Standort/Abteilung wählen.';
+    } elseif (!is_valid_contract_date($contract_start)) {
+        $error = 'Ungültiges Datum für Vertragsbeginn.';
     } elseif (!in_array($status, allowed_contract_statuses(), true)) {
         $error = 'Ungültiger Status.';
     } else {
-        $contract_end = date('Y-m-d', strtotime($contract_start . " +$duration_months months"));
+        $contract_end = calculate_contract_end_date($contract_start, $duration_months);
 
         $stmt = $db->prepare("
             UPDATE contracts

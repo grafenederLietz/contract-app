@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
 require_once __DIR__ . '/../src/contract_access.php';
+require_once __DIR__ . '/../src/upload.php';
 
 require_login();
 
@@ -44,6 +45,11 @@ $filePath = (string)$file['file_path'];
 if (!is_file($filePath) || !is_readable($filePath)) {
     app_log('file_download_missing', $filePath);
     app_abort('Datei nicht gefunden.', 404);
+}
+
+if (!contract_upload_path_is_allowed($filePath)) {
+    app_log('file_download_outside_upload_base', $filePath);
+    app_abort('Zugriff verweigert.', 403);
 }
 
 $extension = strtolower(pathinfo((string)$file['file_name'], PATHINFO_EXTENSION));

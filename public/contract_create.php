@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/auth.php';
 require_once __DIR__ . '/../src/csrf.php';
 require_once __DIR__ . '/../src/contract_access.php';
+require_once __DIR__ . '/../src/contract_dates.php';
 require_once __DIR__ . '/../src/upload.php';
 
 require_login();
@@ -27,6 +28,7 @@ $departments = get_allowed_departments($db, $userId, $userRole);
 
 $allowedLocationIds = get_allowed_ids($locations);
 $allowedDepartmentIds = get_allowed_ids($departments);
+$allowedResponsibleUserIds = get_allowed_ids($users);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
@@ -61,16 +63,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $termination_period_months < 0 ||
         $termination_text === '' ||
         $responsible_user_id <= 0 ||
+        !in_array($responsible_user_id, $allowedResponsibleUserIds, true) ||
         $validatedLocationIds === [] ||
         $validatedDepartmentIds === []
     ) {
         $error = 'Alle Felder sind Pflichtfelder. Bitte alles ausfüllen und mindestens einen Standort/Abteilung wählen.';
+    } elseif (!is_valid_contract_date($contract_start)) {
+        $error = 'Ungültiges Datum für Vertragsbeginn.';
     } elseif (!in_array($status, allowed_contract_statuses(), true)) {
         $error = 'Ungültiger Status.';
     } elseif (!isset($_FILES['contract_file']) || (int)$_FILES['contract_file']['error'] === UPLOAD_ERR_NO_FILE) {
         $error = 'Bitte beim Anlegen direkt ein Dokument hochladen.';
     } else {
-        $contract_end = date('Y-m-d', strtotime($contract_start . " +$duration_months months"));
+        $contract_end = calculate_contract_end_date($contract_start, $duration_months);
         $contractId = 0;
         $targetPath = '';
         $db->begin_transaction();
@@ -134,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmtDept->close();
 
+            // Upload-Logik ausschließlich über src/upload.php pflegen; keine alten Inline-Upload-Blöcke einfügen.
             $contractFolder = contract_upload_folder($contractId, $supplier);
             contract_upload_ensure_folder($contractFolder);
 
@@ -146,51 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'PDF, DOC, DOCX',
                 'contract_create_upload'
             );
-            $uploadBasePath = CONTRACT_UPLOAD_BASE_PATH;
-            $safeSupplier = preg_replace('/[^A-Za-z0-9_-]/', '_', $supplier) ?: 'vertrag';
-            $contractFolder = $uploadBasePath . '/' . $contractId . '_' . $safeSupplier;
-
-            if (!is_dir($contractFolder) && !mkdir($contractFolder, 0775, true) && !is_dir($contractFolder)) {
-                throw new RuntimeException('Upload folder create failed');
-            }
-
-            $fileError = (int)$_FILES['contract_file']['error'];
-            $tmpName = (string)$_FILES['contract_file']['tmp_name'];
-            $originalName = (string)$_FILES['contract_file']['name'];
-            $fileSize = (int)$_FILES['contract_file']['size'];
-
-            if ($fileError !== UPLOAD_ERR_OK) {
-                throw new RuntimeException('Upload error');
-            }
-            if ($fileSize <= 0 || $fileSize > CONTRACT_MAX_UPLOAD_BYTES) {
-                throw new RuntimeException('Upload size invalid');
-            }
-
-            $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-            $allowedExt = ['pdf', 'doc', 'docx'];
-            if (!in_array($ext, $allowedExt, true)) {
-                throw new RuntimeException('Upload extension invalid');
-            }
-
-            $allowedMimeByExt = [
-                'pdf' => ['application/pdf', 'application/x-pdf', 'application/octet-stream'],
-                'doc' => ['application/msword', 'application/octet-stream'],
-                'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
-            ];
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime = is_resource($finfo) ? (string)finfo_file($finfo, $tmpName) : '';
-            if (is_resource($finfo)) {
-                finfo_close($finfo);
-            }
-            if ($mime === '' && function_exists('mime_content_type')) {
-                $mime = (string)(mime_content_type($tmpName) ?: '');
-            }
-            if ($mime === '') {
-                app_log('contract_create_upload_mime_empty', 'file=' . $originalName . ';ext=' . $ext);
-            } elseif (!in_array($mime, $allowedMimeByExt[$ext], true)) {
-                throw new RuntimeException('Upload mime invalid: ' . $mime);
-            }
-
 
             $targetFileName = contract_upload_target_file_name($supplier, (string)$upload['extension']);
             $targetPath = $contractFolder . '/' . $targetFileName;
