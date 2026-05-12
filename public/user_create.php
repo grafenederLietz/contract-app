@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
 require_once __DIR__ . '/../src/csrf.php';
+require_once __DIR__ . '/../src/password_policy.php';
 
 require_login();
 
@@ -29,8 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $allowedRoles = ['admin', 'editor', 'viewer'];
 
+    $passwordErrors = password_policy_errors($password);
+
     if ($username === '' || $display_name === '' || $password === '') {
         $error = 'Bitte alle Pflichtfelder ausfüllen.';
+    } elseif ($passwordErrors !== []) {
+        $error = 'Passwort erfüllt die Richtlinie nicht: ' . implode(', ', $passwordErrors) . '.';
+    } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Bitte eine gültige E-Mail-Adresse eingeben.';
     } elseif (!in_array($role, $allowedRoles, true)) {
         $error = 'Ungültige Rolle.';
     } else {
@@ -130,7 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </select><br><br>
 
     <label for="password">Passwort</label><br>
-    <input type="password" id="password" name="password" required><br><br>
+    <input type="password" id="password" name="password" required><br>
+    <small>Mindestens 12 Zeichen, ein Großbuchstabe, ein Kleinbuchstabe und eine Zahl.</small><br><br>
 
     <label>
         <input type="checkbox" name="is_active" checked>

@@ -37,6 +37,26 @@ function contract_upload_ensure_folder(string $contractFolder): void
     }
 }
 
+function contract_upload_path_is_allowed(string $path): bool
+{
+    $basePath = realpath(CONTRACT_UPLOAD_BASE_PATH);
+    $targetPath = realpath($path);
+
+    if ($basePath === false || $targetPath === false) {
+        return false;
+    }
+
+    $basePath = str_replace('\\', '/', rtrim($basePath, '/\\'));
+    $targetPath = str_replace('\\', '/', $targetPath);
+
+    if (DIRECTORY_SEPARATOR === '\\') {
+        $basePath = strtolower($basePath);
+        $targetPath = strtolower($targetPath);
+    }
+
+    return $targetPath === $basePath || strncmp($targetPath, $basePath . '/', strlen($basePath) + 1) === 0;
+}
+
 function contract_upload_allowed_mime_types(string $extension): array
 {
     $allowedMimeByExt = [

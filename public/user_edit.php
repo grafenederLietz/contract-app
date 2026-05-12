@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../src/auth.php';
 require_once __DIR__ . '/../src/csrf.php';
+require_once __DIR__ . '/../src/password_policy.php';
 
 require_login();
 
@@ -59,8 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $allowedRoles = ['admin', 'editor', 'viewer'];
 
+    $passwordErrors = $password === '' ? [] : password_policy_errors($password);
+
     if ($username === '' || $display_name === '') {
         $error = 'Bitte Pflichtfelder ausfüllen.';
+    } elseif ($passwordErrors !== []) {
+        $error = 'Passwort erfüllt die Richtlinie nicht: ' . implode(', ', $passwordErrors) . '.';
+    } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Bitte eine gültige E-Mail-Adresse eingeben.';
     } elseif (!in_array($role, $allowedRoles, true)) {
         $error = 'Ungültige Rolle.';
     } else {
@@ -372,7 +379,8 @@ if (!$locations) {
     </select><br><br>
 
     <label for="password">Neues Passwort (leer lassen = unverändert)</label><br>
-    <input type="password" id="password" name="password"><br><br>
+    <input type="password" id="password" name="password"><br>
+    <small>Leer lassen für unverändert; neue Passwörter brauchen mindestens 12 Zeichen, einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl.</small><br><br>
 
     <label>
         <input type="checkbox" name="is_active" <?php echo (int)$editUser['is_active'] === 1 ? 'checked' : ''; ?>>

@@ -153,7 +153,6 @@ C:\PHP\php.exe C:\WebApps\contract-app\scripts\verify_config.php
 ```
 
 Optionaler gebündelter Nach-Pull-Check inkl. Konfliktmarker-Suche, `contract_edit.php`, Upload-Helper und Upload-Pfad-ACL:
-Optionaler gebündelter Nach-Pull-Check inkl. `contract_edit.php`, Upload-Helper und Upload-Pfad-ACL:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File C:\WebApps\contract-app\scripts\server_post_pull_check.ps1 -AppRoot C:\WebApps\contract-app -PhpExe C:\PHP\php.exe
@@ -174,7 +173,15 @@ Wichtig bei GitHub-Web-Konflikten:
 - Stattdessen PR schließen oder nicht mergen, neuen Branch vom aktuellen `main` erstellen, Änderungen neu anwenden, lokal bzw. per `scripts/sanity_check.sh` und serverseitig per `scripts/check_conflict_markers.ps1` prüfen und erst dann einen neuen PR erstellen.
 - Konfliktmarker wie `<<<<<<<`, `=======`, `>>>>>>>` dürfen niemals nach `main` gelangen.
 
-## 8. Lokale Serverregeln
+## 8. Codex-/GitHub-Synchronisation
+
+- Alte Codex-Arbeitsbereiche können auf Snapshots oder Branches basieren, die nicht mehr identisch mit dem aktuellen GitHub `main` sind.
+- Fehlgeschlagene Synchronisationsversuche wie `git fetch origin main` müssen im PR-/Handover-Text ausdrücklich genannt werden, damit der Branch-Stand nicht fälschlich als aktueller `main` behandelt wird.
+- Reparaturen nach kaputten GitHub-Web-Merges nur von einem frisch aus aktuellem `main` gestarteten Arbeitsbereich oder einem nachweislich erfolgreich rebased Branch durchführen.
+- Wenn GitHub bei einem PR Konflikte meldet, diese nicht im GitHub-Webeditor für PHP-/CSS-/PowerShell-Dateien zusammenklicken. Stattdessen neuen Branch vom aktuellen `main` erstellen, Änderung sauber neu anwenden und Checks laufen lassen.
+- `public/contract_edit.php` darf keine alten Inline-Upload-Blöcke enthalten; Upload-Helfer und Upload-Validierung werden zentral in `src/upload.php` gepflegt.
+
+## 9. Lokale Serverregeln
 
 Auf dem Server sollen keine getrackten Projektdateien manuell geändert werden, außer in einer Notfall-Reparatur.
 
@@ -210,7 +217,7 @@ powershell -ExecutionPolicy Bypass -File C:\WebApps\contract-app\scripts\repair_
 
 Hinweis: Fachliche Downloads sollen weiterhin über die App und `file_download.php` erfolgen, nicht über direkte Dateisystempfade.
 
-## 9. Aktuelle offene technische To-dos
+## 10. Aktuelle offene technische To-dos
 
 ### Phase 1: Codebasis stabilisieren
 
@@ -225,10 +232,10 @@ Hinweis: Fachliche Downloads sollen weiterhin über die App und `file_download.p
 ### Phase 2: Security Review / Hardening App
 
 - Login-Rate-Limit prüfen/implementieren.
-- Passwort-Policy prüfen/implementieren.
+- Passwort-Policy fachlich finalisieren; technische Basisprüfung bei Benutzeranlage/-bearbeitung ist aktiv.
 - CSRF-Abdeckung erneut vollständig prüfen.
-- Upload-Validierung zentralisieren und weiter härten.
-- Download nur nach Berechtigungsprüfung und bevorzugt als Attachment ausliefern.
+- Upload-Validierung weiter härten; Basis-Zentralisierung in `src/upload.php` ist umgesetzt und per `scripts/sanity_check.sh` gegen alte Inline-Fragmente abgesichert.
+- Download erfolgt nach Berechtigungsprüfung als Attachment und wird zusätzlich auf den Upload-Basispfad begrenzt; weitere Download-Härtung bei Bedarf fachlich prüfen.
 - Content Security Policy evaluieren.
 - Session-/Cookie-Einstellungen für HTTPS finalisieren.
 - Directory Traversal verhindern und Webroot strikt auf `public/` begrenzen.
@@ -313,7 +320,7 @@ Offene Punkte:
 - Styling flexibel halten, damit neue Module einfach integrierbar sind.
 - Dashboard soll für normale Nutzer direkt relevante kritische Verträge und Ampelübersicht zeigen.
 
-## 10. Bekannte fachliche Anforderungen
+## 11. Bekannte fachliche Anforderungen
 
 - Nur berechtigte User dürfen Verträge sehen.
 - Berechtigungen hängen an Standort/Abteilung/Rolle.
@@ -323,7 +330,7 @@ Offene Punkte:
 - Dashboard soll keine unnötigen Filter enthalten, sondern relevante kritische Verträge und Ampelübersicht.
 - Vertragsliste soll Filter übersichtlich und teilweise ausklappbar darstellen.
 
-## 11. Empfohlener nächster Schritt im neuen Arbeitsbereich
+## 12. Empfohlener nächster Schritt im neuen Arbeitsbereich
 
 1. Neuen Codex-Arbeitsbereich vom aktuellen GitHub `main` starten.
 2. Diese Datei `PROJEKT_HANDOVER.md` als Kontext verwenden.
